@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HrWebRecruitment.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HrWebRecruitment.Controllers
 {
-    public class MainController : Controller
+    public class MainController(DbService dbService) : Controller
     {
         [HttpGet]
         public IActionResult Index()

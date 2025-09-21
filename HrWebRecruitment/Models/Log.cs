@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -6,11 +7,15 @@ namespace HrWebRecruitment;
 
 public partial class Log
 {
+    [BsonId]
     public decimal LogId { get; set; }
 
+    [BsonElement("Text")]
     public string? Text { get; set; }
 
-    public DateTime? Logdata { get; set; }
+    [BsonElement("LogDate")]
+    public DateTime? LogDate { get; set; }
 
-    public string? Errormessage { get; set; }
+    [BsonElement("ErrorMessage")]
+    public string? ErrorMessage { get; set; }
 }

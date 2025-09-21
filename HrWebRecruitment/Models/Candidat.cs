@@ -1,22 +1,28 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HrWebRecruitment;
 
-public partial class Candidat
+public class Candidat
 {
-    public decimal Id { get; set; }
+    [BsonId]
+    public ObjectId Id { get; set; }
 
-    public string FirstName { get; set; } = null!;
+    [BsonElement("name")]
+    public string FirstName { get; set; }
 
-    public string LastName { get; set; } = null!;
+    //[BsonElement("LastName")]
+    //public string LastName { get; set; } = null!;
 
-    public string? Email { get; set; }
+    //[BsonElement("Email")]
+    //public string? Email { get; set; }
 
-    public string? Phone { get; set; }
+    //[BsonElement("PhoneNumber")]
+    //public string? PhoneNumber { get; set; }
 
-    public string? Linkcv { get; set; }
-
-    public virtual ICollection<Hiring> Hirings { get; set; } = new List<Hiring>();
+    //[BsonElement("LinkToCv")]
+    //public string? LinkToCv { get; set; }
 }
