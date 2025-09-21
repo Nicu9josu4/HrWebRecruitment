@@ -1,11 +1,13 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace HrWebRecruitment;
 
 public class Vacancy
 {
     [BsonId]
-    public decimal Id { get; set; }
+    [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
+    public ObjectId Id { get; set; } = new ObjectId();
 
     [BsonElement("Title")]
     public string? Title { get; set; }
