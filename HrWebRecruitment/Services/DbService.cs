@@ -2,8 +2,13 @@
 using HrWebRecruitment.Models.Config;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using System.Collections;
+using System.Dynamic;
+using System.Reflection;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HrWebRecruitment.Services
 {
@@ -29,49 +34,68 @@ namespace HrWebRecruitment.Services
 
             foreach (var collectionSection in seedSection.GetChildren())
                 CreateCollectionIfNotExists(collectionSection.Key); //Create collections if not exists
-                                                                    // Get all the properties of MongoDbSeedModel dynamically
-            var properties = typeof(MongoDbSeedModel).GetProperties();
+
+            var properties = typeof(MongoDbSeedModel).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(List<>));// Get all the properties of MongoDbSeedModel dynamically
+
+            //var properties = typeof(MongoDbSeedModel).GetProperties();
 
             foreach (var property in properties)
             {
-                // Get the collection data (List<T>) from the property value
-                var collectionData = property.GetValue(_seedConfig) as IEnumerable<object>;
-
-                if (collectionData != null && collectionData.Any())
+                try
                 {
-                    // Use the property name as the collection name
+                    // Get the collection name from the property name
                     string collectionName = property.Name;
 
-                    // Seed the collection dynamically
-                    await SeedCollectionAsync(collectionData.ToList(), collectionName);
+                    // Get the generic type of the list (e.g., Candidat, Employee)
+                    Type listItemType = property.PropertyType.GetGenericArguments()[0];
+
+                    // Get the data from appsettings.json for this property
+                    var sectionData = seedSection.GetSection(collectionName);
+                    if (!sectionData.Exists())
+                    {
+                        Console.WriteLine($"No data found for collection '{collectionName}' in appsettings.json.");
+                        continue;
+                    }
+
+                    // Deserialize the JSON data into a List<T>
+                    var listType = typeof(List<>).MakeGenericType(listItemType);
+                    var data = sectionData.Get(listType);
+
+                    if (data == null || ((IList)data).Count == 0)
+                    {
+                        Console.WriteLine($"No items to insert for collection '{collectionName}'.");
+                        continue;
+                    }
+
+                    // Get the MongoDB collection dynamically
+                    var collectionMethod = typeof(IMongoDatabase).GetMethod("GetCollection").MakeGenericMethod(listItemType);
+                    var collection = collectionMethod.Invoke(_database, new object[] { collectionName, null });
+
+                    // Insert the data using InsertManyAsync
+                    var insertMethod = typeof(IMongoCollection<>)
+                        .MakeGenericType(listItemType)
+                        .GetMethod("InsertManyAsync", new[] { typeof(IEnumerable<>).MakeGenericType(listItemType), typeof(InsertManyOptions), typeof(CancellationToken) });
+
+                    var insertTask = (Task)insertMethod.Invoke(collection, new object[] { data, null, CancellationToken.None });
+                    await insertTask;
+
+                    Console.WriteLine($"Inserted {((IList)data).Count} items into collection '{collectionName}'.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing collection '{property.Name}': {ex.Message}");
                 }
             }
         }
-        private async Task SeedCollectionAsync<T>(List<T> collectionData, string collectionName)
+        private async Task SeedCollectionAsync<T>(T[] collectionData, string collectionName)
         {
-            if (collectionData == null || collectionData.Count == 0)
-                return;
-
-            // Create collection if it doesn't exist
-            var filter = new BsonDocument("name", collectionName);
-            var collections = await _database.ListCollectionsAsync(new ListCollectionsOptions { Filter = filter });
-            if (!await collections.AnyAsync())
-            {
-                await _database.CreateCollectionAsync(collectionName);
-                Console.WriteLine($"✅ Created collection: {collectionName}");
-            }
-
             // Get the collection
-            var collection = _database.GetCollection<T>(collectionName);
+            var collection = _database.GetCollection<BsonDocument>(collectionName);
 
-            // If the collection is empty, insert the data
-            var count = await collection.CountDocumentsAsync(FilterDefinition<T>.Empty);
-            if (count == 0)
-            {
-                foreach (var data in collectionData)
-                    await collection.InsertOneAsync(data);
-                Console.WriteLine($"✅ Seeded data into collection: {collectionName}");
-            }
+            var collectedData = JsonSerializer.Serialize(collectionData);
+            //foreach (var data in collectionData)
+                await collection.InsertOneAsync(collectedData.ToBsonDocument());
         }
 
         private void CreateCollectionIfNotExists(string collectionName)
