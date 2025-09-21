@@ -25,7 +25,6 @@
   <ItemGroup>
     <Folder Include="Uploads\" />
     <Folder Include="wwwroot\js\Uploads\" />
-    <Folder Include="wwwroot\Uploads\" />
   </ItemGroup>
 
 </Project>

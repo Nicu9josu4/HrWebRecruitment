@@ -13,6 +13,7 @@ string _json;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ModelContext>();
 // Add services to the container.
+builder.Services.AddControllersWithViews();
 
 builder.Services.Configure<MongoDbConfig>(
     builder.Configuration.GetSection("MongoDb"));
@@ -39,6 +40,10 @@ app.UseStaticFiles();
 app.UseStatusCodePages();
 app.UseRouting();
 
+app.MapDefaultControllerRoute();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Main}/{action=Index}/{id?}"); 
 
 app.MapPost("/aplicate", async (HttpContext context, ModelContext db) =>
 {
@@ -82,11 +87,11 @@ app.MapPost("/aplicate", async (HttpContext context, ModelContext db) =>
     }
     Results.Redirect("/");
 });
-app.MapPost("/", async (context) =>
-{
-    context.Response.ContentType = "text/html";
-    await context.Response.SendFileAsync(@"wwwroot/index.html");
-});
+//app.MapPost("/", async (context) =>
+//{
+//    context.Response.ContentType = "text/html";
+//    await context.Response.SendFileAsync(@"wwwroot/index.html");
+//});
 app.MapPost("/getVacancies", async (ModelContext db) =>
 {
     try
