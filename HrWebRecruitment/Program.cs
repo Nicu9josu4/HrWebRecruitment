@@ -93,21 +93,8 @@ app.MapControllerRoute(
 ////});
 
 
-//app.MapPost("/login", (HttpContext context, ModelContext db) =>
-//{
-//    try
-//    {
-//        var form = context.Request.Form;
-//        var user = db.Users.ToList().FirstOrDefault(user => user.Username == form["uname"] && user.Password == form["pname"]);
-//        string json = JsonConvert.SerializeObject(user);
-//        return (json);
-//    }
-//    catch (Exception ex)
-//    {
-//        logger.LogError(ex.Message + " " + ex.StackTrace);
-//        return ex.Message;
-//    }
-//});
+
+
 //app.MapGet("/AdminPanel.html/{target}", (string target, ModelContext db) =>
 //{
 //    string _json = " ";

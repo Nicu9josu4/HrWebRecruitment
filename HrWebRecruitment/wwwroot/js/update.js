@@ -221,7 +221,7 @@
     if (role != null && role != "") {
         $("#loginBtn").html("Personal account");
         $("#loginBtn").on('click', function () {
-            window.location.href = 'AdminPanel.html';
+            window.location.href = '/admin';
         });
     } else {
         $("#loginBtn").click(function () {
@@ -242,7 +242,7 @@
         else {
             $.ajax({
                 method: "POST",
-                url: "/login",
+                url: "/user/login",
                 data:
                 {
                     action: "checkUser",
@@ -251,16 +251,17 @@
                 },
                 dataType: 'json',
                 success: function (data) {
+                    console.log(data);
                     if (data == null) {
                         alert('incorect username or password');
                     } else {
-                        if (data.Roleid === 1) {
+                        if (data.RoleId === 1) {
                             document.cookie = 'role=Admin';
-                            window.location.href = 'AdminPanel.html';
+                            window.location.href = '/admin';
                                 //$("#loginform").attr('action', 'AdminPanel.aspx');
                         } else {
                             document.cookie = "role=User";
-                            window.location.href = 'AdminPanel.html';
+                            window.location.href = '/admin';
                                 //$("#loginform").attr('action', 'Login.aspx');
                             }
                         //$(data).each(function (index, dat) {

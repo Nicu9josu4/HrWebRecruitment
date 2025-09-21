@@ -16,11 +16,13 @@ namespace HrWebRecruitment.Services
     {
         private IMongoDatabase _database = mongoClient.GetDatabase(dbConfig.DatabaseName);
         private readonly IMongoCollection<Vacancy> _vacancyCollection;
+        private readonly IMongoCollection<User> _usersCollection;
 
         public DbService(IMongoClient mongoClient, IOptions<MongoDbConfig> dbConfig, IConfiguration configuration) : this(mongoClient, dbConfig.Value, configuration)
         {
             Initialize().Wait();
             _vacancyCollection = _database.GetCollection<Vacancy>("Vacancies");
+            _usersCollection = _database.GetCollection<User>("Users");
 
         }
 
@@ -88,6 +90,16 @@ namespace HrWebRecruitment.Services
         }
 
         public async Task<List<Vacancy>> GetVacancies() => await _vacancyCollection.Find(new BsonDocument()).ToListAsync();
+        public async Task<User> GetUser(string userName, string password)
+        {
+            // Create a filter to find a user with the specified userName and password
+            var filter = Builders<User>.Filter.Eq(u => u.UserName, userName) &
+                         Builders<User>.Filter.Eq(u => u.Password, password);
+
+            // Use FindOneAsync to return the first matching user (or null if no match is found)
+            return await _usersCollection.Find(filter).FirstOrDefaultAsync();
+        }
+
         private void CreateCollectionIfNotExists(string collectionName)
         {
             var collectionNames = _database.ListCollectionNames().ToList();
