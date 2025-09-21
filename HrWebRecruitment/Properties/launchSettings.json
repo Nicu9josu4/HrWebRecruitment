@@ -7,6 +7,11 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "launchBrowser": true,
+      "distributionName": ""
     }
   },
   "iisSettings": {
