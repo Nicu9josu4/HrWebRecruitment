@@ -34,7 +34,7 @@
 
     $.ajax({
         method: "POST",
-        url: "/getVacancies",
+        url: "/vacancies/get",
         data:
         {
             action: "showVacancies"

@@ -91,21 +91,7 @@ app.MapControllerRoute(
 ////    context.Response.ContentType = "text/html";
 ////    await context.Response.SendFileAsync(@"wwwroot/index.html");
 ////});
-//app.MapPost("/getVacancies", async (ModelContext db) =>
-//{
-//    try
-//    {
-//        var vacancies = db.Vacancies.ToList();
-//        string json = JsonConvert.SerializeObject(vacancies);
-//        await Task.Delay(100);
-//        return json;
-//    }
-//    catch (Exception ex)
-//    {
-//        logger.LogError(ex.Message + " " + ex.StackTrace);
-//        return ex.Message;
-//    }
-//});
+
 
 //app.MapPost("/login", (HttpContext context, ModelContext db) =>
 //{

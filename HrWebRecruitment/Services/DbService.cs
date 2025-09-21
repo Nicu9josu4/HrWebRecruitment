@@ -15,15 +15,13 @@ namespace HrWebRecruitment.Services
     public class DbService(IMongoClient mongoClient, MongoDbConfig dbConfig, IConfiguration configuration)
     {
         private IMongoDatabase _database = mongoClient.GetDatabase(dbConfig.DatabaseName);
-        private readonly MongoDbSeedModel _seedConfig;
+        private readonly IMongoCollection<Vacancy> _vacancyCollection;
 
         public DbService(IMongoClient mongoClient, IOptions<MongoDbConfig> dbConfig, IConfiguration configuration) : this(mongoClient, dbConfig.Value, configuration)
         {
-            // Bind MongoDbSeedModel directly from configuration
-            _seedConfig = new MongoDbSeedModel();
-            configuration.GetSection("MongoDbSeed").Bind(_seedConfig);
-
             Initialize().Wait();
+            _vacancyCollection = _database.GetCollection<Vacancy>("Vacancies");
+
         }
 
         public async Task Initialize()
@@ -88,16 +86,8 @@ namespace HrWebRecruitment.Services
                 }
             }
         }
-        private async Task SeedCollectionAsync<T>(T[] collectionData, string collectionName)
-        {
-            // Get the collection
-            var collection = _database.GetCollection<BsonDocument>(collectionName);
 
-            var collectedData = JsonSerializer.Serialize(collectionData);
-            //foreach (var data in collectionData)
-                await collection.InsertOneAsync(collectedData.ToBsonDocument());
-        }
-
+        public async Task<List<Vacancy>> GetVacancies() => await _vacancyCollection.Find(new BsonDocument()).ToListAsync();
         private void CreateCollectionIfNotExists(string collectionName)
         {
             var collectionNames = _database.ListCollectionNames().ToList();

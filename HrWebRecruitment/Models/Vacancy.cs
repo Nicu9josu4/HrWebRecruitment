@@ -2,7 +2,7 @@
 
 namespace HrWebRecruitment;
 
-public partial class Vacancy
+public class Vacancy
 {
     [BsonId]
     public decimal Id { get; set; }
