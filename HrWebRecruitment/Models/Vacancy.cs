@@ -6,7 +6,6 @@ namespace HrWebRecruitment;
 
 public partial class Vacancy
 {
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public decimal Id { get; set; }
 
     public string? Title { get; set; }

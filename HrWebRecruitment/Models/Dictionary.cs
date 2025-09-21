@@ -6,7 +6,6 @@ namespace HrWebRecruitment;
 
 public partial class Dictionary
 {
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public decimal Id { get; set; }
 
     public string Name { get; set; } = null!;

@@ -6,7 +6,6 @@ namespace HrWebRecruitment;
 
 public partial class User
 {
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public decimal Id { get; set; }
 
     public string? Username { get; set; }
