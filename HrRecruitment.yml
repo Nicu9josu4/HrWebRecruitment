@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  hrconsoulting-app:
+    image: hrconsoulting
+    depends_on:
+      - mongo_db
+    ports:
+      - "8080:8080"
+
+  mongo_db:
+    image: mongo:6.0
+    container_name: mongo_db
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=secret
+      - MONGO_INITDB_DATABASE=HrWebReqruitment
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  mongo_data:
+
+networks:
+  hr_network:
+    driver: bridge
