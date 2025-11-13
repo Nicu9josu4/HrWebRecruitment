@@ -1,6 +1,6 @@
 ﻿namespace HrWebRecruitment.Models.Config
 {
-    public class MongoDbConfig
+    public class MongoDbConfigModel
     {
         public string UserName { get; set; }
         public string Password { get; set; }

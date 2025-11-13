@@ -10,7 +10,7 @@
     },
     "WSL": {
       "commandName": "WSL2",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "distributionName": ""
     }
   },

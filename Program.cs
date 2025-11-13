@@ -2,6 +2,7 @@ using HrWebRecruitment;
 using HrWebRecruitment.Models.Config;
 using HrWebRecruitment.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Newtonsoft.Json;
@@ -10,20 +11,35 @@ using System.Data;
 
 string _json;
 var builder = WebApplication.CreateBuilder(args);
+
+//builder.Services.AddOptions<RabbitMqConfigModel>()
+//    .Bind(builder.Configuration.GetSection("RabbitMq"))
+//    .ValidateDataAnnotations()
+//    .ValidateOnStart();
+builder.Services.AddOptions<MongoDbConfigModel>()
+    .Bind(builder.Configuration.GetSection("MongoDb"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<MinioConfigModel>()
+    .Bind(builder.Configuration.GetSection("Minio"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-
-builder.Services
-    .AddOptions<MongoDbConfig>()
-    .Bind(builder.Configuration.GetSection("MongoDb"));
-
-// Register IMongoClient as a singleton
+builder.Services.AddSingleton<DbService>();
+builder.Services.AddSingleton<MinioService>();
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
-    var settings = sp.GetRequiredService<IOptions<MongoDbConfig>>().Value;
-    return new MongoClient(settings.ConnectionString);
+    var logger = sp.GetRequiredService<ILogger<Program>>();
+    var mongoDbConfig = sp.GetRequiredService<IOptions<MongoDbConfigModel>>().Value;
+    logger.LogInformation("MongoDb connection established");
+    return new MongoClient(mongoDbConfig.ConnectionString);
 });
-builder.Services.AddSingleton<DbService>();
+
+
+
 
 var app = builder.Build();
 string? _connectionString = app.Configuration.GetConnectionString("DefaultConnection");
@@ -31,68 +47,15 @@ string? _connectionString = app.Configuration.GetConnectionString("DefaultConnec
 ILoggerFactory loggerFactory = app.Services.GetService<ILoggerFactory>();
 ILogger logger = loggerFactory.CreateLogger("Program");
 
-app.UseHttpsRedirection();
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseStatusCodePages();
-app.UseRouting();
 
 app.MapDefaultControllerRoute();
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Main}/{action=Index}/{id?}"); 
-
-//app.MapPost("/aplicate", async (HttpContext context, ModelContext db) =>
-//{
-
-//    try
-//    {
-//        var form = context.Request.Form;
-//        if (form.Files != null)
-//        {
-//            var file = form.Files[0];
-//            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\Uploads\\" + file.FileName);
-//            using (var stream = new FileStream(path, FileMode.Create))
-//            {
-//                await file.CopyToAsync(stream);
-//            }
-//            var vac = db.Vacancies.ToList().FirstOrDefault(vacancy => vacancy.Title == form["VacancyTitle"]);
-//            var IdNewName = db.Dictionaries.ToList().FirstOrDefault(dictionary => dictionary.Name == "New");
-//            db.Add(new Candidat
-//            {
-//                FirstName = form["Name"],
-//                LastName = form["Surname"],
-//                Email = form["Email"],
-//                Phone = form["Phone"].ToString(),
-//                Linkcv = "Uploads\\" + file.FileName
-
-//            });
-//            db.SaveChanges();
-//            db.Add(new Hiring
-//            {
-//                Candidat = db.Candidats.Max(candidat => candidat.Id),
-//                Vacancy = vac.Id,
-//                StatusDate = DateTime.Now,
-//                Status = IdNewName.Id,
-//            });
-//            db.SaveChanges();
-//        }
-//    }
-//    catch (Exception ex)
-//    {
-//        logger.LogError(ex.Message + " " + ex.StackTrace);
-//    }
-//    Results.Redirect("/");
-//});
-////app.MapPost("/", async (context) =>
-////{
-////    context.Response.ContentType = "text/html";
-////    await context.Response.SendFileAsync(@"wwwroot/index.html");
-////});
-
-
+    pattern: "{controller=Main}/{action=Index}/{id?}");
 
 
 //app.MapGet("/AdminPanel.html/{target}", (string target, ModelContext db) =>
@@ -100,19 +63,7 @@ app.MapControllerRoute(
 //    string _json = " ";
 //    switch (target)
 //    {
-//        case "GetVacancy":
-//            {
-//                try
-//                {
-//                    var vacancies = db.Vacancies.ToList();
-//                    _json = JsonConvert.SerializeObject(vacancies);
-//                }
-//                catch (Exception ex)
-//                {
-//                    logger.LogError(ex.Message + " " + ex.StackTrace);
-//                }
-//                break;
-//            }
+//        
 //        case "GetHiring":
 //            {
 //                try

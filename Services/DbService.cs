@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 using System.Collections;
 using System.Dynamic;
 using System.Reflection;
@@ -12,18 +13,23 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HrWebRecruitment.Services
 {
-    public class DbService(IMongoClient mongoClient, MongoDbConfig dbConfig, IConfiguration configuration)
+    public class DbService(IMongoClient mongoClient, MongoDbConfigModel dbConfig, IConfiguration configuration, ILogger<DbService> logger)
     {
         private IMongoDatabase _database = mongoClient.GetDatabase(dbConfig.DatabaseName);
         private readonly IMongoCollection<Vacancy> _vacancyCollection;
         private readonly IMongoCollection<User> _usersCollection;
+        private readonly IMongoCollection<Candidat> _candidatsCollection;
+        private readonly IMongoCollection<Hiring> _hiringCollection;
+        private readonly IMongoCollection<Dictionary> _dictionariesCollection;
 
-        public DbService(IMongoClient mongoClient, IOptions<MongoDbConfig> dbConfig, IConfiguration configuration) : this(mongoClient, dbConfig.Value, configuration)
+        public DbService(IMongoClient mongoClient, IOptions<MongoDbConfigModel> dbConfig, IConfiguration configuration, ILogger<DbService> logger) : this(mongoClient, dbConfig.Value, configuration, logger)
         {
-            Initialize().Wait();
+            //Initialize().Wait();
             _vacancyCollection = _database.GetCollection<Vacancy>("Vacancies");
             _usersCollection = _database.GetCollection<User>("Users");
-
+            _candidatsCollection = _database.GetCollection<Candidat>("Candidats");
+            _hiringCollection = _database.GetCollection<Hiring>("Hirings");
+            _dictionariesCollection = _database.GetCollection<Dictionary>("Dictionaries");
         }
 
         public async Task Initialize()
@@ -98,6 +104,97 @@ namespace HrWebRecruitment.Services
 
             // Use FindOneAsync to return the first matching user (or null if no match is found)
             return await _usersCollection.Find(filter).FirstOrDefaultAsync();
+        }
+
+        public async Task ApplyAsync(Candidat candidat)
+        {
+            await _candidatsCollection.InsertOneAsync(candidat);
+        }
+
+        public async Task<string> GetHirings()
+        {
+            try
+            {
+                var pipeline = new[]
+                {
+                new BsonDocument("$match", new BsonDocument("Status", new BsonDocument("$ne", 8))), // where Status != 8
+                // Lookup Candidats
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Candidats" },
+                    { "localField", "Candidat" },
+                    { "foreignField", "_id" },
+                    { "as", "CandidatData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$CandidatData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+                // Lookup Users
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Users" },
+                    { "localField", "Users" },
+                    { "foreignField", "_id" },
+                    { "as", "UsersData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$UsersData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+                // Lookup Dictionaries (Status)
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Dictionaries" },
+                    { "localField", "Status" },
+                    { "foreignField", "_id" },
+                    { "as", "StatusData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$StatusData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+                // Lookup Vacancies
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Vacancies" },
+                    { "localField", "Vacancy" },
+                    { "foreignField", "_id" },
+                    { "as", "VacancyData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$VacancyData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+                // Project required fields and computed fields
+                new BsonDocument("$project", new BsonDocument
+                {
+                    { "HiringId", "$_id" },
+                    { "CandidatID", "$Candidat" },
+                    { "Candidat", new BsonDocument("$concat", new BsonArray { "$CandidatData.FirstName", " ", "$CandidatData.LastName" }) },
+                    { "User", new BsonDocument("$ifNull", new BsonArray { new BsonDocument("$concat", new BsonArray { "$UsersData.FirstName", " ", "$UsersData.LastName" }), "admin" }) },
+                    { "Status", "$StatusData.Name" },
+                    { "Vacancy", "$VacancyData.Title" },
+                    { "StatusDate", 1 },
+                    { "Comm", new BsonDocument("$ifNull", new BsonArray { "$Comm", "required" }) },
+                    { "CV", "$CandidatData.Linkcv" }
+                }),
+                new BsonDocument("$sort", new BsonDocument("HiringId", 1))
+            };
+
+                var results = await _hiringCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
+
+                return JsonConvert.SerializeObject(results);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error while fetching Hiring data.");
+                return null;
+            }
         }
 
         private void CreateCollectionIfNotExists(string collectionName)

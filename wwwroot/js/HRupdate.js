@@ -11,7 +11,7 @@
 
     $.ajax({
         method: "GET",
-        url: "/AdminPanel.html/GetStatuses",
+        url: "/Admin/GetStatuses",
         data:
         {
             action: "GetComponents",
@@ -348,7 +348,7 @@
 
         $.ajax({
             method: "GET",
-            url: "/AdminPanel.html/" + target,
+            url: "/Admin/" + target,
             data:
             {
                 action: "GetComponents",
@@ -418,7 +418,7 @@
 
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/DeleteCandidat",
+                            url: "/Admin/" + target + "/DeleteCandidat",
                             data: {
                                 ID: ID,
                             },
@@ -426,7 +426,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/" + target,
+                                url: "/Admin/" + target,
                                 data:
                                 {
                                     action: "GetComponents",
@@ -448,7 +448,7 @@
                         CandidatInfo.show();
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/GetCandidat",
+                            url: "/Admin/" + target + "/GetCandidat",
                             data: {
                                 ID: CandidatID,
                             },
@@ -470,7 +470,7 @@
                     //$('.PopUpEditHiringWindow').find('#ShowCandidatCV').on('click', function () {
                     //    $.ajax({
                     //        method: 'POST',
-                    //        url: '/AdminPanel.html/' + target + '/GetCV',
+                    //        url: '/Admin/' + target + '/GetCV',
                     //        data: {
                     //            ID: CandidatID,
                     //        },
@@ -551,7 +551,7 @@
 
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/DeleteUser",
+                            url: "/Admin/" + target + "/DeleteUser",
                             data: {
                                 ID: ID,
                             },
@@ -559,7 +559,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/" + target,
+                                url: "/Admin/" + target,
                                 data:
                                 {
                                     action: "GetComponents",
@@ -578,7 +578,7 @@
                         var a = "adsa0";
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/EditUser",
+                            url: "/Admin/" + target + "/EditUser",
                             data:
                             {
                                 ID: ID,
@@ -593,7 +593,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/GetUsers",
+                                url: "/Admin/GetUsers",
                                 data:
                                 {
                                     action: "GetComponents",
@@ -640,7 +640,7 @@
 
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/DeleteEmployee",
+                            url: "/Admin/" + target + "/DeleteEmployee",
                             data: {
                                 ID: ID,
                             },
@@ -648,7 +648,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/" + target,
+                                url: "/Admin/" + target,
                                 data:
                                 {
                                     action: "GetComponents",
@@ -667,7 +667,7 @@
                         var a = "adsa0";
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/EditEmployee",
+                            url: "/Admin/" + target + "/EditEmployee",
                             data:
                             {
                                 ID: ID,
@@ -681,7 +681,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/GetEmployees",
+                                url: "/Admin/GetEmployees",
                                 data:
                                 {
                                     action: "GetComponents",
@@ -721,7 +721,7 @@
 
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/DeleteDictionary",
+                            url: "/Admin/" + target + "/DeleteDictionary",
                             data: {
                                 ID: ID,
                             },
@@ -729,7 +729,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/" + target,
+                                url: "/Admin/" + target,
                                 data:
                                 {
                                     action: "GetComponents",
@@ -747,7 +747,7 @@
                     $('.PopUpEditDictionaryWindow').find('#EditDictionaryButton').on('click', function () {
                         $.ajax({
                             method: "POST",
-                            url: "/AdminPanel.html/" + target + "/EditDictionary",
+                            url: "/Admin/" + target + "/EditDictionary",
                             data:
                             {
                                 ID: ID,
@@ -759,7 +759,7 @@
                         }).always(function () {
                             $.ajax({
                                 method: "GET",
-                                url: "/AdminPanel.html/GetDictionary",
+                                url: "/Admin/GetDictionary",
                                 data:
                                 {
                                     action: "GetComponents",
@@ -790,7 +790,7 @@
         // end ajax function
 
     });
-    //window.location.("/AdminPanel.html/GetVacancy")
+    //window.location.("/Admin/GetVacancy")
 
     //#region Work with vacancies table // Add, Edit, Delete, 
 
@@ -798,7 +798,7 @@
         $('.PopUpAddVacancyWindow-Behind').hide();
         $.ajax({
             method: "POST",
-            url: "/AdminPanel.html/" + target + "/EditVacancy",
+            url: "/Admin/" + target + "/EditVacancy",
             data:
             {
                 ID: ID,
@@ -810,7 +810,7 @@
         }).always(function () {
             $.ajax({
                 method: "GET",
-                url: "/AdminPanel.html/GetVacancy",
+                url: "/Admin/GetVacancy",
                 data:
                 {
                     action: "GetComponents",
@@ -821,14 +821,14 @@
                 }
             });
         }); // end ajax
-        //window.location.replace("/AdminPanel.html");
+        //window.location.replace("/Admin");
     }); // End edit button
 
     $('#DeleteVacancyButton').on('click', function () {
         $('.PopUpAddVacancyWindow-Behind').hide();
         $.ajax({
             method: "POST",
-            url: "/AdminPanel.html/ " + target + "/DeleteVacancy",
+            url: "/Admin/ " + target + "/DeleteVacancy",
             data:
             {
                 ID: ID
@@ -837,7 +837,7 @@
         }).always(function () {
             $.ajax({
                 method: "GET",
-                url: "/AdminPanel.html/GetVacancy",
+                url: "/Admin/GetVacancy",
                 data:
                 {
                     action: "GetComponents",
@@ -873,7 +873,7 @@
             //alert(ID);
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/EditVacancyMenu",
+                url: "/Admin/" + target + "/EditVacancyMenu",
                 data:
                 {
                     ID: ID
@@ -897,7 +897,7 @@
         $('.PopUpAddVacancyWindow-Behind').hide();
         $.ajax({
             method: "POST",
-            url: "/AdminPanel.html/ " + target + "/SetNewVacancy",
+            url: "/Admin/ " + target + "/SetNewVacancy",
             data:
             {
                 Title: $('#VacTitle').val(),
@@ -933,7 +933,7 @@
         } else {
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/getVacancyV",
+                url: "/Admin/" + target + "/getVacancyV",
                 data:
                 {
                     Title: $('#SelectModel').val()
@@ -1006,7 +1006,7 @@
 
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/DeleteCandidat",
+                    url: "/Admin/" + target + "/DeleteCandidat",
                     data: {
                         ID: ID,
                     },
@@ -1014,7 +1014,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/" + target,
+                        url: "/Admin/" + target,
                         data:
                         {
                             action: "GetComponents",
@@ -1036,7 +1036,7 @@
                 CandidatInfo.show();
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/GetCandidat",
+                    url: "/Admin/" + target + "/GetCandidat",
                     data: {
                         ID: CandidatID,
                     },
@@ -1060,7 +1060,7 @@
 
                 //$.ajax({
                 //    method: 'POST',
-                //    url: '/AdminPanel.html/' + target + '/GetCV',
+                //    url: '/Admin/' + target + '/GetCV',
                 //    data: {
                 //        ID: CandidatID,
                 //    },
@@ -1104,7 +1104,7 @@
             //alert(ID);
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/EditHiringMenu",
+                url: "/Admin/" + target + "/EditHiringMenu",
                 data:
                 {
                     ID: ID
@@ -1129,7 +1129,7 @@
         var a = $('#CandidatStatus').val();
         $.ajax({
             method: "POST",
-            url: "/AdminPanel.html/" + target + "/EditHiring",
+            url: "/Admin/" + target + "/EditHiring",
             data:
             {
                 ID: ID,
@@ -1141,7 +1141,7 @@
         }).always(function () {
             $.ajax({
                 method: "GET",
-                url: "/AdminPanel.html/GetHiring",
+                url: "/Admin/GetHiring",
                 data:
                 {
                     action: "GetComponents",
@@ -1177,7 +1177,7 @@
 
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/DeleteEmployee",
+                    url: "/Admin/" + target + "/DeleteEmployee",
                     data: {
                         ID: ID,
                     },
@@ -1185,7 +1185,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/" + target,
+                        url: "/Admin/" + target,
                         data:
                         {
                             action: "GetComponents",
@@ -1204,7 +1204,7 @@
                 var a = "adsa0";
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/EditEmployee",
+                    url: "/Admin/" + target + "/EditEmployee",
                     data:
                     {
                         ID: ID,
@@ -1218,7 +1218,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/GetEmployees",
+                        url: "/Admin/GetEmployees",
                         data:
                         {
                             action: "GetComponents",
@@ -1236,7 +1236,7 @@
             //alert(ID);
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/EditEmployeeMenu",
+                url: "/Admin/" + target + "/EditEmployeeMenu",
                 data:
                 {
                     ID: ID
@@ -1271,7 +1271,7 @@
         $('#SelectUserModel').append('<option selected>Select User...</option>');
         $.ajax({
             method: "POST",
-            url: "/AdminPanel.html/" + target + "/getCandidats",
+            url: "/Admin/" + target + "/getCandidats",
             data: "data",
             dataType: 'json',
             success: function (data) {
@@ -1305,7 +1305,7 @@
 
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/DeleteUser",
+                    url: "/Admin/" + target + "/DeleteUser",
                     data: {
                         ID: ID,
                     },
@@ -1313,7 +1313,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/" + target,
+                        url: "/Admin/" + target,
                         data:
                         {
                             action: "GetComponents",
@@ -1332,7 +1332,7 @@
                 var a = "adsa0";
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/EditUser",
+                    url: "/Admin/" + target + "/EditUser",
                     data:
                     {
                         ID: ID,
@@ -1347,7 +1347,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/GetUsers",
+                        url: "/Admin/GetUsers",
                         data:
                         {
                             action: "GetComponents",
@@ -1365,7 +1365,7 @@
             //alert(ID);
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/EditUserMenu",
+                url: "/Admin/" + target + "/EditUserMenu",
                 data:
                 {
                     ID: ID
@@ -1396,7 +1396,7 @@
         } else {
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/getSelectedCandidat",
+                url: "/Admin/" + target + "/getSelectedCandidat",
                 data:
                 {
                     ID: $('#SelectUserModel').find(':selected').val()
@@ -1418,7 +1418,7 @@
 
         $.ajax({
             method: "POST",
-            url: "/AdminPanel.html/" + target + "/SetNewUser",
+            url: "/Admin/" + target + "/SetNewUser",
             data:
             {
                 FirstName: $('#User-FirstName').val(),
@@ -1431,7 +1431,7 @@
             $('.PopUpAddUserWindow-Behind').hide();
             $.ajax({
                 method: "GET",
-                url: "/AdminPanel.html/GetUsers",
+                url: "/Admin/GetUsers",
                 data:
                 {
                     action: "GetComponents",
@@ -1461,7 +1461,7 @@
 
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/DeleteDictionary",
+                    url: "/Admin/" + target + "/DeleteDictionary",
                     data: {
                         ID: ID,
                     },
@@ -1469,7 +1469,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/" + target,
+                        url: "/Admin/" + target,
                         data:
                         {
                             action: "GetComponents",
@@ -1487,7 +1487,7 @@
             $('.PopUpEditDictionaryWindow').find('#EditDictionaryButton').on('click', function () {
                 $.ajax({
                     method: "POST",
-                    url: "/AdminPanel.html/" + target + "/EditDictionary",
+                    url: "/Admin/" + target + "/EditDictionary",
                     data:
                     {
                         ID: ID,
@@ -1499,7 +1499,7 @@
                 }).always(function () {
                     $.ajax({
                         method: "GET",
-                        url: "/AdminPanel.html/GetDictionary",
+                        url: "/Admin/GetDictionary",
                         data:
                         {
                             action: "GetComponents",
@@ -1517,7 +1517,7 @@
             //alert(ID);
             $.ajax({
                 method: "POST",
-                url: "/AdminPanel.html/" + target + "/EditDictionaryMenu",
+                url: "/Admin/" + target + "/EditDictionaryMenu",
                 data:
                 {
                     ID: ID
@@ -1537,7 +1537,7 @@
 
     $.ajax({
         method: "GET",
-        url: "/AdminPanel.html/GetVacancy",
+        url: "/Admin/GetVacancy",
         data:
         {
             action: "GetComponents",
