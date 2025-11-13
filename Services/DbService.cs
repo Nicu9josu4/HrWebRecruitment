@@ -21,6 +21,7 @@ namespace HrWebRecruitment.Services
         private readonly IMongoCollection<Candidat> _candidatsCollection;
         private readonly IMongoCollection<Hiring> _hiringCollection;
         private readonly IMongoCollection<Dictionary> _dictionariesCollection;
+        private readonly IMongoCollection<Employee> _employeesCollection;
 
         public DbService(IMongoClient mongoClient, IOptions<MongoDbConfigModel> dbConfig, IConfiguration configuration, ILogger<DbService> logger) : this(mongoClient, dbConfig.Value, configuration, logger)
         {
@@ -30,6 +31,7 @@ namespace HrWebRecruitment.Services
             _candidatsCollection = _database.GetCollection<Candidat>("Candidats");
             _hiringCollection = _database.GetCollection<Hiring>("Hirings");
             _dictionariesCollection = _database.GetCollection<Dictionary>("Dictionaries");
+            _employeesCollection = _database.GetCollection<Employee>("Employees");
         }
 
         public async Task Initialize()
@@ -96,6 +98,7 @@ namespace HrWebRecruitment.Services
         }
 
         public async Task<List<Vacancy>> GetVacancies() => await _vacancyCollection.Find(new BsonDocument()).ToListAsync();
+
         public async Task<User> GetUser(string userName, string password)
         {
             // Create a filter to find a user with the specified userName and password
@@ -187,12 +190,59 @@ namespace HrWebRecruitment.Services
             };
 
                 var results = await _hiringCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
-
-                return JsonConvert.SerializeObject(results);
+                return results.ToJson();
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error while fetching Hiring data.");
+                logger.LogError(ex, "Error while fetching Hiring data. {ErrorMessage}", ex.Message);
+                return null;
+            }
+        }
+
+        public async Task<string> GetUsers()
+        {
+            try
+            {
+                var pipeline = new[]
+                {
+                new BsonDocument
+                {
+                    { "$lookup", new BsonDocument
+                        {
+                            { "from", "Dictionaries" },
+                            { "localField", "Roleid" },
+                            { "foreignField", "_id" },
+                            { "as", "RoleData" }
+                        }
+                    }
+                },
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$RoleData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+                new BsonDocument("$sort", new BsonDocument("_id", 1)),
+                new BsonDocument("$project", new BsonDocument
+                {
+                    { "Id", "$_id" },
+                    { "Username", 1 },
+                    { "Password", 1 },
+                    { "FirstName", 1 },
+                    { "LastName", 1 },
+                    { "Email", 1 },
+                    { "RoleId", "$RoleData.Name" },
+                    { "StartDate", 1 },
+                    { "EndDate", 1 }
+                })
+            };
+
+                var results = await _usersCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
+
+                return results.ToJson();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving users and roles");
                 return null;
             }
         }
@@ -204,6 +254,126 @@ namespace HrWebRecruitment.Services
             {
                 _database.CreateCollection(collectionName);
                 Console.WriteLine($"✅ Collection '{collectionName}' created.");
+            }
+        }
+
+        public async Task<string> GetEmployees()
+        {
+            try
+            {
+                var pipeline = new[]
+                {
+                // Lookup Position from Dictionaries
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Dictionaries" },
+                    { "localField", "Position" },
+                    { "foreignField", "_id" },
+                    { "as", "PositionData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$PositionData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+
+                // Lookup Department from Dictionaries
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Dictionaries" },
+                    { "localField", "Department" },
+                    { "foreignField", "_id" },
+                    { "as", "DepartmentData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$DepartmentData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+
+                // Lookup Hiring
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Hirings" },
+                    { "localField", "Hiring" },
+                    { "foreignField", "_id" },
+                    { "as", "HiringData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$HiringData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+
+                // Lookup Candidats (from HiringData.Candidat)
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Candidats" },
+                    { "localField", "HiringData.Candidat" },
+                    { "foreignField", "_id" },
+                    { "as", "CandidatData" }
+                }),
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$CandidatData" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+
+                // Sort by E.Id (_id)
+                new BsonDocument("$sort", new BsonDocument("_id", 1)),
+
+                // Project required fields including joined data and concatenation
+                new BsonDocument("$project", new BsonDocument
+                {
+                    { "Id", "$_id" },
+                    { "FirstName", 1 },
+                    { "LastName", 1 },
+                    { "Phone", 1 },
+                    { "Email", 1 },
+                    { "Department", "$DepartmentData.Name" },
+                    { "Position", "$PositionData.Name" },
+                    { "Hiring", new BsonDocument("$concat", new BsonArray { "$CandidatData.FirstName", " ", "$CandidatData.LastName" }) },
+                    { "StartDate", 1 },
+                    { "EndDate", 1 }
+                })
+            };
+
+                var results = await _employeesCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
+                return results.ToJson();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving employees data.");
+                return null;
+            }
+        }
+
+        public async Task<List<Dictionary>> GetDictionary() => await _dictionariesCollection.Find(new BsonDocument()).ToListAsync();
+
+        public async Task<string> GetStatuses()
+        {
+            try
+            {
+                var dictionariesCollection = _database.GetCollection<BsonDocument>("Dictionaries");
+
+                var filter = Builders<BsonDocument>.Filter.Eq("Type", "Status");
+                var dictionaries = await dictionariesCollection.Find(filter).ToListAsync();
+
+                var statuses = new List<string>();
+                foreach (var doc in dictionaries)
+                {
+                    if (doc.TryGetValue("Name", out var name))
+                    {
+                        statuses.Add(name.AsString);
+                    }
+                }
+
+                return JsonConvert.SerializeObject(statuses);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving statuses");
+                return null;
             }
         }
     }
