@@ -247,16 +247,6 @@ namespace HrWebRecruitment.Services
             }
         }
 
-        private void CreateCollectionIfNotExists(string collectionName)
-        {
-            var collectionNames = _database.ListCollectionNames().ToList();
-            if (!collectionNames.Contains(collectionName))
-            {
-                _database.CreateCollection(collectionName);
-                Console.WriteLine($"✅ Collection '{collectionName}' created.");
-            }
-        }
-
         public async Task<string> GetEmployees()
         {
             try
@@ -374,6 +364,15 @@ namespace HrWebRecruitment.Services
             {
                 logger.LogError(ex, "Error retrieving statuses");
                 return null;
+            }
+        }
+        private void CreateCollectionIfNotExists(string collectionName)
+        {
+            var collectionNames = _database.ListCollectionNames().ToList();
+            if (!collectionNames.Contains(collectionName))
+            {
+                _database.CreateCollection(collectionName);
+                Console.WriteLine($"✅ Collection '{collectionName}' created.");
             }
         }
     }
