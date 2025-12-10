@@ -28,14 +28,9 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
     return new MongoClient(mongoDbConfig.ConnectionString);
 });
 
-
-
-
 var app = builder.Build();
 string? _connectionString = app.Configuration.GetConnectionString("DefaultConnection");
 // Configure the HTTP request pipeline.
-ILoggerFactory loggerFactory = app.Services.GetService<ILoggerFactory>();
-ILogger logger = loggerFactory.CreateLogger("Program");
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
