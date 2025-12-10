@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,7 +9,8 @@ namespace HrWebRecruitment;
 public partial class Dictionary
 {
     [BsonId]
-    public decimal Id { get; set; }
+    [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
+    public ObjectId Id { get; set; }
 
     [BsonElement("Name")]
     public string Name { get; set; } = null!;

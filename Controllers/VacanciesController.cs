@@ -27,7 +27,7 @@ namespace HrWebRecruitment.Controllers
 
                 await dbService.ApplyAsync(new Candidat()
                 {
-                    Id = ObjectId.GenerateNewId().ToString(),
+                    Id = ObjectId.GenerateNewId(),
                     FirstName = Request.Form["Name"],
                     LastName = Request.Form["LastName"],
                     Email = Request.Form["Email"],

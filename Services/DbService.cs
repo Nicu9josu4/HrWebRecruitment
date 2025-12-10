@@ -141,13 +141,13 @@ namespace HrWebRecruitment.Services
 
                 // --- Efficient MongoDB Filter (Preferred for the initial query) ---
                 // Assuming the Status field in the Hiring collection is stored as an integer (like the Dictionary Id)
-                var filter = Builders<Hiring>.Filter.Ne(h => h.Status, archivedStatusId);
+                var filter = Builders<Hiring>.Filter.Ne(h => new ObjectId(h.Status), archivedStatusId);
 
                 // Handle the case where the status was not found (or default to existing behavior if '8' is reliable)
                 if (archivedStatusId == null)
                 {
-                    // Fallback or error handling
-                    filter = Builders<Hiring>.Filter.Ne(h => h.Status, 8);
+                    // With this corrected line:
+                    filter = Builders<Hiring>.Filter.Ne(h => h.Status, "8");
                 }
 
                 var filteredHirings = await _hiringCollection.Find(filter).ToListAsync();
@@ -158,9 +158,9 @@ namespace HrWebRecruitment.Services
                     .Select(hiring =>
                     {
                         // Ensure IDs are converted correctly for matching (e.g., Candidat ID is ObjectId or string)
-                        var candidat = candidats.FirstOrDefault(c => c.Id == hiring.Candidat); // Assuming Candidat is the correct BSON type
+                        var candidat = candidats.FirstOrDefault(c => c.Id == new ObjectId(hiring.Candidat)); // Assuming Candidat is the correct BSON type
                         var user = users.FirstOrDefault(u => u.Id == new ObjectId(hiring.Users));            // Assuming Users is the correct BSON type
-                        var statusDict = dictionaries.FirstOrDefault(d => d.Id == hiring.Status);
+                        var statusDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(hiring.Status));
                         var vacancy = vacancies.FirstOrDefault(v => v.Id == new ObjectId(hiring.Vacancy));
 
                         return new
@@ -200,7 +200,7 @@ namespace HrWebRecruitment.Services
                     .OrderBy(u => u.Id)
                     .Select(u =>
                     {
-                        var role = dictionaries.FirstOrDefault(d => d.Id == (u.RoleId ?? 0));
+                        var role = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(u.RoleId));
                         return new
                         {
                             Id = u.Id,
@@ -229,85 +229,40 @@ namespace HrWebRecruitment.Services
         {
             try
             {
-                var pipeline = new[]
-                {
-                // Lookup Position from Dictionaries
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Dictionaries" },
-                    { "localField", "Position" },
-                    { "foreignField", "_id" },
-                    { "as", "PositionData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$PositionData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
+                // Fetch all required collections
+                var employees = await _employeesCollection.Find(_ => true).ToListAsync();
+                var dictionaries = await _dictionariesCollection.Find(_ => true).ToListAsync();
+                var hirings = await _hiringCollection.Find(_ => true).ToListAsync();
+                var candidats = await _candidatsCollection.Find(_ => true).ToListAsync();
 
-                // Lookup Department from Dictionaries
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Dictionaries" },
-                    { "localField", "Department" },
-                    { "foreignField", "_id" },
-                    { "as", "DepartmentData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$DepartmentData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
+                var result = employees
+                    .OrderBy(e => e.Id)
+                    .Select(e =>
+                    {
+                        var positionDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(e.Position));
+                        var departmentDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(e.Department));
+                        var hiring = hirings.FirstOrDefault(h => h.Id == new ObjectId(e.Hiring));
+                        var candidat = hiring != null
+                            ? candidats.FirstOrDefault(c => c.Id == new ObjectId(hiring.Candidat))
+                            : null;
 
-                // Lookup Hiring
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Hirings" },
-                    { "localField", "Hiring" },
-                    { "foreignField", "_id" },
-                    { "as", "HiringData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$HiringData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
+                        return new
+                        {
+                            Id = e.Id,
+                            FirstName = e.FirstName,
+                            LastName = e.LastName,
+                            Phone = e.PhoneNumber,
+                            Email = e.Email,
+                            Department = departmentDict?.Name,
+                            Position = positionDict?.Name,
+                            Hiring = candidat != null ? $"{candidat.FirstName} {candidat.LastName}" : "",
+                            StartDate = e.StartDate,
+                            EndDate = e.EndDate
+                        };
+                    })
+                    .ToList();
 
-                // Lookup Candidats (from HiringData.Candidat)
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Candidats" },
-                    { "localField", "HiringData.Candidat" },
-                    { "foreignField", "_id" },
-                    { "as", "CandidatData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$CandidatData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
-
-                // Sort by E.Id (_id)
-                new BsonDocument("$sort", new BsonDocument("_id", 1)),
-
-                // Project required fields including joined data and concatenation
-                new BsonDocument("$project", new BsonDocument
-                {
-                    { "Id", "$_id" },
-                    { "FirstName", 1 },
-                    { "LastName", 1 },
-                    { "Phone", 1 },
-                    { "Email", 1 },
-                    { "Department", "$DepartmentData.Name" },
-                    { "Position", "$PositionData.Name" },
-                    { "Hiring", new BsonDocument("$concat", new BsonArray { "$CandidatData.FirstName", " ", "$CandidatData.LastName" }) },
-                    { "StartDate", 1 },
-                    { "EndDate", 1 }
-                })
-            };
-
-                var results = await _employeesCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
-                return results.ToJson();
+                return JsonConvert.SerializeObject(result);
             }
             catch (Exception ex)
             {
@@ -318,9 +273,9 @@ namespace HrWebRecruitment.Services
 
         public async Task<List<Dictionary>> GetDictionary() => await _dictionariesCollection.Find(_ => true).ToListAsync();
         // Add the missing method definition for GetCandidats  
-        public Task<List<Candidat>> GetCandidats()
+        public async Task<List<Candidat>> GetCandidats()
         {
-            return _candidatsCollection.Find(_ => true).ToListAsync();
+            return await _candidatsCollection.Find(_ => true).ToListAsync();
         }
 
 
@@ -536,7 +491,7 @@ namespace HrWebRecruitment.Services
 
             foreach (var idStr in delEmployeeId)
             {
-                if (decimal.TryParse(idStr, out var employeeId))
+                if (ObjectId.TryParse(idStr, out var employeeId))
                 {
                     var filter = Builders<Employee>.Filter.Eq(e => e.Id, employeeId);
                     await _employeesCollection.DeleteOneAsync(filter);
@@ -555,7 +510,7 @@ namespace HrWebRecruitment.Services
 
             foreach (var idStr in delDictId)
             {
-                if (decimal.TryParse(idStr, out var dictId))
+                if (ObjectId.TryParse(idStr, out var dictId))
                 {
                     var filter = Builders<Dictionary>.Filter.Eq(d => d.Id, dictId);
                     await _dictionariesCollection.DeleteOneAsync(filter);
@@ -576,7 +531,7 @@ namespace HrWebRecruitment.Services
             {
                 if (!string.IsNullOrWhiteSpace(idStr))
                 {
-                    var filter = Builders<Candidat>.Filter.Eq(c => c.Id, idStr);
+                    var filter = Builders<Candidat>.Filter.Eq(c => c.Id, new ObjectId(idStr));
                     await _candidatsCollection.DeleteOneAsync(filter);
                 }
                 else
@@ -584,6 +539,17 @@ namespace HrWebRecruitment.Services
                     throw new ArgumentException($"Invalid Candidat Id: {idStr}");
                 }
             }
+        }
+
+        internal async Task AddDictionaryAsync(Dictionary newDictionary)
+        {
+            if (newDictionary == null)
+                throw new ArgumentNullException(nameof(newDictionary));
+
+            if (_dictionariesCollection == null)
+                throw new InvalidOperationException("Dictionaries collection is not initialized.");
+
+            await _dictionariesCollection.InsertOneAsync(newDictionary);
         }
     }
 }

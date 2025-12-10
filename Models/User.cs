@@ -9,6 +9,7 @@ namespace HrWebRecruitment;
 public partial class User
 {
     [BsonId]
+    [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
     public ObjectId Id { get; set; }
 
     [BsonElement("UserName")]
@@ -27,7 +28,7 @@ public partial class User
     public string? Email { get; set; }
 
     [BsonElement("RoleId")]
-    public decimal? RoleId { get; set; }
+    public string? RoleId { get; set; } // Link to dictionary item
 
     [BsonElement("StartDate")]
     public DateTime? StartDate { get; set; }

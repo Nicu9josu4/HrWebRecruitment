@@ -22,6 +22,8 @@
                 <li><a href="/" class="nav-item"><i class="fas fa-home"></i> Home</a></li>
                 <li><a id="VacanciesModal-btn" class="nav-item active" data-content="vacancies"><i class="fas fa-briefcase"></i> Vacancies</a></li>
                 <li><a id="HiringModal-btn" class="nav-item" data-content="hiring"><i class="fas fa-user-tie"></i> Hiring</a></li>
+
+                <li><a id="CandidatesModal-btn" class="nav-item" data-content="candidats"><i class="fas fa-id-badge"></i> Candidates</a></li>
                 <li><a id="EmployeesModal-btn" class="nav-item" data-content="employees"><i class="fas fa-users"></i> Employees</a></li>
                 <li><a id="DictionaryModal-btn" class="nav-item" data-content="dictionary"><i class="fas fa-book"></i> Dictionary</a></li>
                 <li><a id="UsersModal-btn" class="nav-item" data-content="users"><i class="fas fa-users-cog"></i> Users</a></li>
@@ -57,6 +59,14 @@
                     </table>
                 </div>
 
+                <div id="candidats-view" class="data-view hidden">
+                    <h2>Candidat Records</h2>
+                    <table class="data-table" id="CandidatsTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
                 <div id="employees-view" class="data-view hidden">
                     <h2>Employee Records</h2>
                     <table class="data-table" id="EmployeesTable">
@@ -71,6 +81,7 @@
                         <thead></thead>
                         <tbody></tbody>
                     </table>
+                    <button class="btn btn-success addDictionaries" data-action="add-dictionary">Add Dictionary</button>
                 </div>
 
                 <div id="users-view" class="data-view hidden">

@@ -35,7 +35,8 @@ namespace HrWebRecruitment.Controllers
         [HttpGet("GetEmployees")]
         public async Task<string> GetEmployees()
         {
-            return await dbService.GetEmployees();
+            var result = await dbService.GetEmployees();
+            return result;
         }
 
         [HttpGet("GetDictionary")]
@@ -50,6 +51,13 @@ namespace HrWebRecruitment.Controllers
         {
             return await dbService.GetStatuses();
         }
+        [HttpGet("GetCandidats")]
+        public async Task<string> GetCandidats()
+        {
+            var result = await dbService.GetCandidats();
+            return result.ToJson();
+        }
+
 
         [HttpPost("{target}/{actionName}")]
         public async Task<IActionResult> HandleAction(string target, string actionName)
@@ -80,7 +88,7 @@ namespace HrWebRecruitment.Controllers
                             FirstName = form["FirstName"],
                             LastName = form["LastName"],
                             Email = mail,
-                            RoleId = hrRole,
+                            RoleId = hrRole.ToString(),
                             StartDate = DateTime.Now,
                             EndDate = null
                         };
@@ -101,6 +109,18 @@ namespace HrWebRecruitment.Controllers
                         };
                         await dbService.AddVacancyAsync(newVacancy);
                         return Content("Success");
+                    case "SetNewDictionary":
+                        var dictName = form["Name"];
+                        var dictType = form["Type"];
+                        var dictDescription = form["Description"];
+                        var newDictionary = new Dictionary
+                        {
+                            Name = dictName,
+                            Type = dictType,
+                            Description = dictDescription
+                        };
+                        await dbService.AddDictionaryAsync(newDictionary);
+                        return Ok();
                     case "EditVacancy":
                         var editVacancies = await dbService.GetVacancies();
                         var editVacancy = editVacancies.FirstOrDefault(v => v.Id.ToString() == form["ID"]);
@@ -130,9 +150,9 @@ namespace HrWebRecruitment.Controllers
                                 PhoneNumber = candidatToRemove.PhoneNumber,
                                 Email = candidatToRemove.Email,
                                 StartDate = DateTime.Now,
-                                Department = firstDepartment.Id,
-                                Hiring = hiringToRemove.Id,
-                                Position = hrPosition.Id
+                                Department = firstDepartment.Id.ToString(),
+                                Hiring = hiringToRemove.Id.ToString(),
+                                Position = hrPosition.Id.ToString()
                             };
                             await dbService.AddEmployeeAsync(newEmployee);
                         }
@@ -141,7 +161,7 @@ namespace HrWebRecruitment.Controllers
                         var dictionary = dictionaryList.First(value => value.Name == status);
                         var hiringList = JsonConvert.DeserializeObject<List<Hiring>>(await dbService.GetHirings());
                         var hiring = hiringList.First(h => h.Id.ToString() == id);
-                        hiring.Status = dictionary.Id;
+                        hiring.Status = dictionary.Id.ToString();
                         hiring.Comm = description;
                         hiring.StatusDate = DateTime.Now;
                         await dbService.UpdateHiringAsync(hiring);
@@ -172,7 +192,7 @@ namespace HrWebRecruitment.Controllers
                         editEmployee.FirstName = form["EmployeeFirstName"];
                         editEmployee.LastName = form["EmployeeLastName"];
                         editEmployee.Email = form["EmployeeEmail"];
-                        editEmployee.Department = selectedDepartment.Id;
+                        editEmployee.Department = selectedDepartment.Id.ToString();
                         editEmployee.PhoneNumber = form["EmployeePhone"];
                         await dbService.UpdateEmployeeAsync(editEmployee);
                         return Ok();
@@ -225,7 +245,7 @@ namespace HrWebRecruitment.Controllers
                         var editHiringMenuId = form["ID"];
                         var editHiringMenuList = JsonConvert.DeserializeObject<List<Hiring>>(await dbService.GetHirings());
                         var editHiringMenu = editHiringMenuList.FirstOrDefault(h => h.Id.ToString() == editHiringMenuId);
-                        var statusName = (await dbService.GetDictionary()).First(dict => dict.Id == editHiringMenu.Status);
+                        var statusName = (await dbService.GetDictionary()).First(dict => dict.Id == new ObjectId(editHiringMenu.Status));
                         var hirObj = new
                         {
                             HiringID = editHiringMenuId,

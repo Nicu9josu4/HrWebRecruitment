@@ -7,9 +7,9 @@ public class Candidat
 {
     [BsonId]
     [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
-    [BsonElement("name")]
+    [BsonElement("FirstName")]
     public string FirstName { get; set; }
 
     [BsonElement("LastName")]

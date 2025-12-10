@@ -11,7 +11,8 @@ namespace HrWebRecruitment;
 public partial class Hiring
 {
     [BsonId]
-    public decimal Id { get; set; }
+    [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
+    public ObjectId Id { get; set; }
 
     [BsonElement("Candidat")]
     public string Candidat { get; set; }
@@ -20,7 +21,7 @@ public partial class Hiring
     public string? Users { get; set; }
 
     [BsonElement("Status")]
-    public decimal Status { get; set; }
+    public string Status { get; set; }
 
     [BsonElement("Vacancy")]
     public string? Vacancy { get; set; }
