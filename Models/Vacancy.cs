@@ -9,6 +9,9 @@ public class Vacancy
     [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
     public ObjectId Id { get; set; } = new ObjectId();
 
+    [BsonElement("LinkId")]
+    public int LinkId { get; set; }
+
     [BsonElement("Title")]
     public string? Title { get; set; }
 

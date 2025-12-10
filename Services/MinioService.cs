@@ -47,6 +47,7 @@ namespace HrWebRecruitment.Services
                 if (!found)
                 {
                     await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(BucketName));
+
                 }
 
                 var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);

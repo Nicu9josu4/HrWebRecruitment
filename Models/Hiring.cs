@@ -1,7 +1,10 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using static HrWebRecruitment.Services.UtilsService;
 
 namespace HrWebRecruitment;
 
@@ -11,18 +14,19 @@ public partial class Hiring
     public decimal Id { get; set; }
 
     [BsonElement("Candidat")]
-    public decimal Candidat { get; set; }
+    public string Candidat { get; set; }
 
     [BsonElement("Users")]
-    public decimal? Users { get; set; }
+    public string? Users { get; set; }
 
     [BsonElement("Status")]
     public decimal Status { get; set; }
 
     [BsonElement("Vacancy")]
-    public decimal? Vacancy { get; set; }
+    public string? Vacancy { get; set; }
 
     [BsonElement("StatusDate")]
+    [JsonConverter(typeof(BsonDateTimeConverter))] // Use a custom converter
     public DateTime? StatusDate { get; set; }
 
     [BsonElement("Comm")]

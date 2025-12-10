@@ -1,279 +1,121 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title></title>
+    <title>HR Admin Dashboard</title>
     <link href="images/favicon.png" rel="icon" type="image/x-icon" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <link rel="stylesheet" type="text/css" href="~/css/adminStyle.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 </head>
 <body>
 
-    <nav class="topnav">
+    <div id="admin-dashboard-layout">
 
-        <a style="background-color: #44296e;" href="/">Home</a>
-        <a id="VacanciesModal-btn" class="LinkToModal topNavSelected">Vacancies</a>
-        <a id="HiringModal-btn" class="LinkToModal">Hiring</a>
-        <a id="EmployeesModal-btn" class="LinkToModal"> Employees</a>
-
-        <!--<a style="float: right;" id="UsernameModal-btn">Username</a>-->
-        <a style="float: right;" id="LogOutModal-btn">LogOut</a>
-    </nav>
-    <h1 class="WelcomeToPanel">Welcome:</h1>
-    <table class="VacanciesTable">
-        <thead>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-
-    <table class="HiringTable" style="display: none;">
-        <thead>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-
-    <table class="UsersTable" style="display: none;">
-        <thead>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-
-    <table class="EmployeesTable" style="display: none;">
-        <thead>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-
-    <table class="DictionaryTable" style="display: none;">
-        <thead>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-
-    <button class="addVacancies"> Add Vacancy</button>
-    <button class="addUser"> Add User</button>
-
-
-    <div class="PopUpAddVacancyWindow-Behind">
-        <div class="PopUpAddVacancyWindow">
-            <div class="PopUpAddVacancyWindow-body">
-                <div class="bodySelection">
-                    <label for="SelectModel">Select a Model:</label>
-                    <select id="SelectModel">
-                        <option>SelectVacancy</option>
-                    </select>
-                </div>
-                <div class="bodySelection">
-                    <label for="VacTitle">Insert a title</label>
-                    <input type="text" id="VacTitle">
-                </div>
-                <div class="bodySelection">
-                    <label for="SetDate">Set a end Date</label>
-                    <input type="date" id="SetDate">
-                </div>
-
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h3>HR Panel</h3>
             </div>
-            <div class="PopUpAddVacancyWindow-body2">
-                <br />
-                <textarea value="this is a textarea" id="VacancyDesc" placeholder="Place Description"></textarea>
-                <br />
-                <!--<button id="ExitFromVacancyWindow">X</button>-->
-                <div class="button-group">
-                    <button id="EditVacancyButton">SaveEditing</button>
-                    <button id="DeleteVacancyButton">DeleteVacancy</button>
-                    <button id="AddVacancyButton">AddVacancy</button>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-item"><i class="fas fa-home"></i> Home</a></li>
+                <li><a id="VacanciesModal-btn" class="nav-item active" data-content="vacancies"><i class="fas fa-briefcase"></i> Vacancies</a></li>
+                <li><a id="HiringModal-btn" class="nav-item" data-content="hiring"><i class="fas fa-user-tie"></i> Hiring</a></li>
+                <li><a id="EmployeesModal-btn" class="nav-item" data-content="employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a id="DictionaryModal-btn" class="nav-item" data-content="dictionary"><i class="fas fa-book"></i> Dictionary</a></li>
+                <li><a id="UsersModal-btn" class="nav-item" data-content="users"><i class="fas fa-users-cog"></i> Users</a></li>
+            </ul>
+        </nav>
+
+        <main id="main-content">
+
+            <header id="main-header">
+                <h1 class="WelcomeToPanel">Welcome, Admin!</h1>
+                <div class="user-actions">
+                    <button id="add-item-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Add New</button>
+                    <a style="float: right;" id="LogOutModal-btn" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> LogOut</a>
+                </div>
+            </header>
+
+            <section id="content-view">
+
+                <div id="vacancies-view" class="data-view active">
+                    <h2>Vacancies Management</h2>
+                    <table class="data-table" id="VacanciesTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                    <button class="btn btn-success addVacancies" data-action="add-vacancy">Add Vacancy</button>
                 </div>
 
-            </div>
-        </div>
+                <div id="hiring-view" class="data-view hidden">
+                    <h2>Hiring Candidates</h2>
+                    <table class="data-table" id="HiringTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div id="employees-view" class="data-view hidden">
+                    <h2>Employee Records</h2>
+                    <table class="data-table" id="EmployeesTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div id="dictionary-view" class="data-view hidden">
+                    <h2>System Dictionary</h2>
+                    <table class="data-table" id="DictionaryTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div id="users-view" class="data-view hidden">
+                    <h2>User Accounts</h2>
+                    <table class="data-table" id="UsersTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                    <button class="btn btn-success addUser" data-action="add-user">Add User</button>
+                </div>
+
+            </section>
+        </main>
+
     </div>
 
-    <div class="PopUpEditHiringWindow-Behind">
-        <div class="PopUpEditHiringWindow">
-            <div class="PopUpEditHiringWindow-body">
-                <button id="CandidatStatus">Status</button>
-                <!--<br />-->
-                <label for="ShowCandidatInfo" class="CandidatName">Candidat Name</label>
-                <div class="CandidatInfo">
-                    <button id="ShowCandidatInfo">ViewInfo</button>
-                </div>
-                <!--<br />-->
-                <label class="CandidatEditedBy">Who edited</label>
-                <label class="CandidatSelectedVacancy">Selected Vacancy</label>
-                <!--<br />-->
-                <label class="CandidatLastEdit">Last Edited Date</label>
+    <div id="global-modal-behind" class="modal-behind">
+        <div id="global-modal" class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-title"></h3>
+                <button class="close-modal-btn">&times;</button>
             </div>
-            <div class="PopUpEditHiringWindow-body2">
-                <hr />
-                <br />
-                <textarea value="this is a textarea" id="HiringDesc" placeholder="Place Description"></textarea>
-                <div class="button-group">
-                    <button id="EditHiringButton">SaveEditing</button>
-                    <button id="ShowCandidatCV"><a download href="" id="DownloadCV">ShowCV</a></button>
-                    <button id="DeleteHiringButton">DeleteCandidat</button>
-                </div>
-            </div>
-        </div>
-        <div class="PopUpCandidatInfoWindow">
-            <label><h3>Wiew Info</h3></label>
-            <br />
-            <label class="CandidatNameWithSurname">Name/Surname</label>
-            <br />
-            <label class="CandidatEmail">Email</label>
-            <br />
-            <label class="CandidatPhone">Phone</label>
-        </div>
-    </div>
-
-    <div class="PopUpAddUserWindow-Behind">
-        <div class="PopUpAddUserWindow">
-            <div class="PopUpAddUserWindow-body">
-                <!--<div class="bodySelection">
-                    <label for="SelectUserModel">Select a Model:</label>
-                    <select id="SelectUserModel">
-                        <option>SelectUser</option>
-                    </select>
-                </div>-->
-                <div class="data-group1">
-                    <label id="User-FirstNameLabel">firstname</label>
-                    <input type="text" id="User-FirstName">
-                    <label id="User-LastNameLabel">lastname</label>
-                    <input type="text" id="User-LastName">
-                </div>
-                <div class="data-group">
-                    <label for="UserName">Username</label>
-                    <input type="text" id="UserName">
-                    <label for="UserName">Password</label>
-                    <input type="text" id="UserPass">
-                </div>
-                <!--<div class="bodySelection">
-                    <label for="UserName">Insert a title</label>
-                    <input type="text" id="UserName">
-                </div>-->
-
-            </div>
-            <div class="PopUpAddUserWindow-body2">
-                <br />
-                <div class="button-group">
-                    <button id="EditUserButton">SaveEditing</button>
-                    <button id="DeleteUserButton">DeleteUser</button>
-                    <button id="AddUserButton">AddUser</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <div class="PopUpEditUserWindow-Behind">
-        <div class="PopUpEditUserWindow">
-            <div class="PopUpEditUserWindow-body">
-                <div class="bodySelection">
-                    <label for="UserFirstName">FirstName</label>
-                    <input type="text" id="UserFirstName">
-                </div>
-                <div class="bodySelection">
-                    <label for="UserLastName">LastName</label>
-                    <input type="text" id="UserLastName">
-                </div>
-                <div class="bodySelection">
-                    <label for="UserUsername">Username</label>
-                    <input type="text" id="UserUsername">
-                </div>
-                <div class="bodySelection">
-                    <label for="UserPassword">Password</label>
-                    <input type="text" id="UserPassword">
-                </div>
-                <div class="bodySelection">
-                    <label for="UserEmail">Email</label>
-                    <input type="text" id="UserEmail">
-                </div>
-                <!--<div class="bodySelection">
-                    <label for="UserEmail">EndDate</label>
-                    <input type="text" id="UserEndDate">
-                </div>-->
-            </div>
-            <div class="PopUpAddVacancyWindow-body2">
-                <div class="button-group">
-                    <button id="EditUserButton">SaveEditing</button>
-                    <button id="DeleteUserButton">DeleteUser</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <div class="PopUpEditEmployeeWindow-Behind">
-        <div class="PopUpEditEmployeeWindow">
-            <div class="PopUpEditEmployeeWindow-body">
-                <div class="bodySelection">
-                    <label for="EmployeeFirstName">FirstName</label>
-                    <input type="text" id="EmployeeFirstName">
-                </div>
-                <div class="bodySelection">
-                    <label for="EmployeeLastName">LastName</label>
-                    <input type="text" id="EmployeeLastName">
-                </div>
-                <div class="bodySelection">
-                    <label for="EmployeePhone">Phone</label>
-                    <input type="text" id="EmployeePhone">
-                </div>
-                <div class="bodySelection">
-                    <label for="EmployeeEmail">Email</label>
-                    <input type="text" id="EmployeeEmail">
-                </div>
-                <div class="bodySelection">
-                    <label for="EmployeeDepartment">Department</label>
-                    <select id="EmployeeDepartment">
-                    </select>
-                    <!--<input type="text" id="EmployeeDepartment">-->
-                </div>
-            </div>
-            <div class="PopUpAddVacancyWindow-body2">
-                <div class="button-group">
-                    <button id="EditEmployeeButton">SaveEditing</button>
-                    <button id="DeleteEmployeeButton">DeleteEmployee</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-
-    <div class="PopUpEditDictionaryWindow-Behind">
-        <div class="PopUpEditDictionaryWindow">
-            <div class="PopUpEditDictionaryWindow-body">
-                <div class="bodySelection">
-                    <label for="DictionaryName">Name</label>
-                    <input type="text" id="DictionaryName">
-                </div>
-                <div class="bodySelection">
-                    <label for="DictionaryGroup">Group</label>
-                    <input type="text" id="DictionaryGroup">
-                </div>
-                <div class="bodySelection">
-                    <label for="DictionaryDescription">Description</label>
-                    <input type="text" id="DictionaryDescription">
-                </div>
-            </div>
-            <div class="PopUpAddVacancyWindow-body2">
-                <div class="button-group">
-                    <button id="EditDictionaryButton">SaveEditing</button>
-                    <button id="DeleteDictionaryButton">DeleteDictionary</button>
-                </div>
-
+            <div class="modal-body" id="modal-content-area">
             </div>
         </div>
     </div>
 
     <script src="js/HRupdate.js"></script>
+    <script>
+        // JS/jQuery to handle navigation and modal loading
+        $(document).ready(function() {
+            // Function to handle tab switching
+            $('.nav-item').on('click', function(e) {
+                e.preventDefault();
+                $('.nav-item').removeClass('active');
+                $(this).addClass('active');
 
-    <!--<script type="text/javascript" src="js/modals.js"></script>-->
+                const target = $(this).data('content') + '-view';
+                $('.data-view').removeClass('active').addClass('hidden');
+                $('#' + target).removeClass('hidden').addClass('active');
+            });
+
+            // Set initial active view
+            $('#vacancies-view').removeClass('hidden').addClass('active');
+        });
+    </script>
 </body>
 </html>

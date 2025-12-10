@@ -1,6 +1,7 @@
 ﻿using HrWebRecruitment.Models;
 using HrWebRecruitment.Models.Config;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -30,7 +31,7 @@ namespace HrWebRecruitment.Services
             _usersCollection = _database.GetCollection<User>("Users");
             _candidatsCollection = _database.GetCollection<Candidat>("Candidats");
             _hiringCollection = _database.GetCollection<Hiring>("Hirings");
-            _dictionariesCollection = _database.GetCollection<Dictionary>("Dictionaries");
+            _dictionariesCollection = _database.GetCollection<Dictionary>("Dictionary");
             _employeesCollection = _database.GetCollection<Employee>("Employees");
         }
 
@@ -118,84 +119,73 @@ namespace HrWebRecruitment.Services
         {
             try
             {
-                var pipeline = new[]
-                {
-                new BsonDocument("$match", new BsonDocument("Status", new BsonDocument("$ne", 8))), // where Status != 8
-                // Lookup Candidats
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Candidats" },
-                    { "localField", "Candidat" },
-                    { "foreignField", "_id" },
-                    { "as", "CandidatData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$CandidatData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
-                // Lookup Users
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Users" },
-                    { "localField", "Users" },
-                    { "foreignField", "_id" },
-                    { "as", "UsersData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$UsersData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
-                // Lookup Dictionaries (Status)
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Dictionaries" },
-                    { "localField", "Status" },
-                    { "foreignField", "_id" },
-                    { "as", "StatusData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$StatusData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
-                // Lookup Vacancies
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Vacancies" },
-                    { "localField", "Vacancy" },
-                    { "foreignField", "_id" },
-                    { "as", "VacancyData" }
-                }),
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$VacancyData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
-                // Project required fields and computed fields
-                new BsonDocument("$project", new BsonDocument
-                {
-                    { "HiringId", "$_id" },
-                    { "CandidatID", "$Candidat" },
-                    { "Candidat", new BsonDocument("$concat", new BsonArray { "$CandidatData.FirstName", " ", "$CandidatData.LastName" }) },
-                    { "User", new BsonDocument("$ifNull", new BsonArray { new BsonDocument("$concat", new BsonArray { "$UsersData.FirstName", " ", "$UsersData.LastName" }), "admin" }) },
-                    { "Status", "$StatusData.Name" },
-                    { "Vacancy", "$VacancyData.Title" },
-                    { "StatusDate", 1 },
-                    { "Comm", new BsonDocument("$ifNull", new BsonArray { "$Comm", "required" }) },
-                    { "CV", "$CandidatData.Linkcv" }
-                }),
-                new BsonDocument("$sort", new BsonDocument("HiringId", 1))
-            };
+                // 1. Fetch all static data tables first (Dictionaries, Users, Candidats, Vacancies)
+                var dictionaries = await _dictionariesCollection.Find(_ => true).ToListAsync();
+                var candidats = await _candidatsCollection.Find(_ => true).ToListAsync();
+                var users = await _usersCollection.Find(_ => true).ToListAsync();
+                var vacancies = await _vacancyCollection.Find(_ => true).ToListAsync();
 
-                var results = await _hiringCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
-                return results.ToJson();
+                // 2. Dynamically find the ID for the status we want to exclude (e.g., "Archived")
+                //    NOTE: You must know the exact 'Name' or 'Id' of the status to exclude. 
+                //    Assuming the status named "Archived" should be excluded.
+                //    If the ID 8 is indeed the archived status, you can skip this step and use 8 directly.
+
+                // --- Dynamic Filter (Recommended) ---
+                var archivedStatusId = dictionaries.FirstOrDefault(d => d.Name == "Archived" && d.Type == "Status")?.Id;
+
+                // 3. Fetch Hirings, filtering out the excluded status
+                //    If we couldn't find the archived status ID, we default to showing all (or throw/return empty).
+                //    If you use LINQ to filter, you must pull all documents first, which is inefficient:
+                //    var hirings = await _hiringCollection.Find(_ => true).ToListAsync();
+                //    var filteredHirings = hirings.Where(h => h.Status != archivedStatusId).ToList();
+
+                // --- Efficient MongoDB Filter (Preferred for the initial query) ---
+                // Assuming the Status field in the Hiring collection is stored as an integer (like the Dictionary Id)
+                var filter = Builders<Hiring>.Filter.Ne(h => h.Status, archivedStatusId);
+
+                // Handle the case where the status was not found (or default to existing behavior if '8' is reliable)
+                if (archivedStatusId == null)
+                {
+                    // Fallback or error handling
+                    filter = Builders<Hiring>.Filter.Ne(h => h.Status, 8);
+                }
+
+                var filteredHirings = await _hiringCollection.Find(filter).ToListAsync();
+
+
+                // 4. Join data using LINQ
+                var result = filteredHirings
+                    .Select(hiring =>
+                    {
+                        // Ensure IDs are converted correctly for matching (e.g., Candidat ID is ObjectId or string)
+                        var candidat = candidats.FirstOrDefault(c => c.Id == hiring.Candidat); // Assuming Candidat is the correct BSON type
+                        var user = users.FirstOrDefault(u => u.Id == new ObjectId(hiring.Users));            // Assuming Users is the correct BSON type
+                        var statusDict = dictionaries.FirstOrDefault(d => d.Id == hiring.Status);
+                        var vacancy = vacancies.FirstOrDefault(v => v.Id == new ObjectId(hiring.Vacancy));
+
+                        return new
+                        {
+                            HiringId = hiring.Id,
+                            CandidatID = hiring.Candidat,
+                            Candidat = candidat != null ? $"{candidat.FirstName} {candidat.LastName}" : "",
+                            User = user != null ? $"{user.FirstName} {user.LastName}" : "admin",
+                            Status = statusDict?.Name,
+                            Vacancy = vacancy?.Title,
+                            StatusDate = hiring.StatusDate, // Keep as DateTime for proper JSON serialization
+                            Comm = string.IsNullOrEmpty(hiring.Comm) ? "required" : hiring.Comm,
+                            CV = candidat?.LinkToCv
+                        };
+                    })
+                    .OrderBy(x => x.HiringId)
+                    .ToList();
+
+                // 5. Return JSON
+                return JsonConvert.SerializeObject(result);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error while fetching Hiring data. {ErrorMessage}", ex.Message);
-                return null;
+                return "[]";
             }
         }
 
@@ -203,42 +193,30 @@ namespace HrWebRecruitment.Services
         {
             try
             {
-                var pipeline = new[]
-                {
-                new BsonDocument
-                {
-                    { "$lookup", new BsonDocument
+                var users = await _usersCollection.Find(_ => true).ToListAsync();
+                var dictionaries = await _dictionariesCollection.Find(d => d.Type == "Role").ToListAsync();
+
+                var result = users
+                    .OrderBy(u => u.Id)
+                    .Select(u =>
+                    {
+                        var role = dictionaries.FirstOrDefault(d => d.Id == (u.RoleId ?? 0));
+                        return new
                         {
-                            { "from", "Dictionaries" },
-                            { "localField", "Roleid" },
-                            { "foreignField", "_id" },
-                            { "as", "RoleData" }
-                        }
-                    }
-                },
-                new BsonDocument("$unwind", new BsonDocument
-                {
-                    { "path", "$RoleData" },
-                    { "preserveNullAndEmptyArrays", true }
-                }),
-                new BsonDocument("$sort", new BsonDocument("_id", 1)),
-                new BsonDocument("$project", new BsonDocument
-                {
-                    { "Id", "$_id" },
-                    { "Username", 1 },
-                    { "Password", 1 },
-                    { "FirstName", 1 },
-                    { "LastName", 1 },
-                    { "Email", 1 },
-                    { "RoleId", "$RoleData.Name" },
-                    { "StartDate", 1 },
-                    { "EndDate", 1 }
-                })
-            };
+                            Id = u.Id,
+                            Username = u.UserName,
+                            Password = u.Password,
+                            FirstName = u.FirstName,
+                            LastName = u.LastName,
+                            Email = u.Email,
+                            RoleId = role?.Name,
+                            StartDate = u.StartDate,
+                            EndDate = u.EndDate
+                        };
+                    })
+                    .ToList();
 
-                var results = await _usersCollection.Aggregate<BsonDocument>(pipeline).ToListAsync();
-
-                return results.ToJson();
+                return JsonConvert.SerializeObject(result);
             }
             catch (Exception ex)
             {
@@ -338,7 +316,13 @@ namespace HrWebRecruitment.Services
             }
         }
 
-        public async Task<List<Dictionary>> GetDictionary() => await _dictionariesCollection.Find(new BsonDocument()).ToListAsync();
+        public async Task<List<Dictionary>> GetDictionary() => await _dictionariesCollection.Find(_ => true).ToListAsync();
+        // Add the missing method definition for GetCandidats  
+        public Task<List<Candidat>> GetCandidats()
+        {
+            return _candidatsCollection.Find(_ => true).ToListAsync();
+        }
+
 
         public async Task<string> GetStatuses()
         {
@@ -373,6 +357,232 @@ namespace HrWebRecruitment.Services
             {
                 _database.CreateCollection(collectionName);
                 Console.WriteLine($"✅ Collection '{collectionName}' created.");
+            }
+        }
+        public async Task AddUserAsync(User newUser)
+        {
+            if (_usersCollection == null)
+            {
+                throw new InvalidOperationException("Users collection is not initialized.");
+            }
+            await _usersCollection.InsertOneAsync(newUser);
+        }
+
+        internal async Task AddVacancyAsync(Vacancy newVacancy)
+        {
+
+            if (newVacancy == null)
+                throw new ArgumentNullException(nameof(newVacancy));
+
+            if (_vacancyCollection == null)
+                throw new InvalidOperationException("Vacancy collection is not initialized.");
+            newVacancy.LinkId = new Random().Next(640000);
+            await _vacancyCollection.InsertOneAsync(newVacancy);
+        }
+
+        internal async Task UpdateVacancyAsync(Vacancy editVacancy)
+        {
+            if (editVacancy == null)
+                throw new ArgumentNullException(nameof(editVacancy));
+
+            if (_vacancyCollection == null)
+                throw new InvalidOperationException("Vacancy collection is not initialized.");
+
+            var filter = Builders<Vacancy>.Filter.Eq(v => v.Id, editVacancy.Id);
+            var update = Builders<Vacancy>.Update
+                .Set(v => v.Title, editVacancy.Title)
+                .Set(v => v.Description, editVacancy.Description)
+                .Set(v => v.StartDate, editVacancy.StartDate)
+                .Set(v => v.EndDate, editVacancy.EndDate);
+
+            await _vacancyCollection.UpdateOneAsync(filter, update);
+        }
+
+        internal async Task AddEmployeeAsync(Employee newEmployee)
+        {
+            if (newEmployee == null)
+                throw new ArgumentNullException(nameof(newEmployee));
+
+            if (_employeesCollection == null)
+                throw new InvalidOperationException("Employees collection is not initialized.");
+
+            await _employeesCollection.InsertOneAsync(newEmployee);
+        }
+
+        internal async Task UpdateHiringAsync(Hiring hiring)
+        {
+            if (hiring == null)
+                throw new ArgumentNullException(nameof(hiring));
+
+            if (_hiringCollection == null)
+                throw new InvalidOperationException("Hiring collection is not initialized.");
+
+            var filter = Builders<Hiring>.Filter.Eq(h => h.Id, hiring.Id);
+            var update = Builders<Hiring>.Update
+                .Set(h => h.Candidat, hiring.Candidat)
+                .Set(h => h.Users, hiring.Users)
+                .Set(h => h.Status, hiring.Status)
+                .Set(h => h.Vacancy, hiring.Vacancy)
+                .Set(h => h.StatusDate, hiring.StatusDate)
+                .Set(h => h.Comm, hiring.Comm);
+
+            await _hiringCollection.UpdateOneAsync(filter, update);
+        }
+
+        internal async Task UpdateEmployeeAsync(Employee editEmployee)
+        {
+            if (editEmployee == null)
+                throw new ArgumentNullException(nameof(editEmployee));
+
+            if (_employeesCollection == null)
+                throw new InvalidOperationException("Employees collection is not initialized.");
+
+            var filter = Builders<Employee>.Filter.Eq(e => e.Id, editEmployee.Id);
+            var update = Builders<Employee>.Update
+                .Set(e => e.FirstName, editEmployee.FirstName)
+                .Set(e => e.LastName, editEmployee.LastName)
+                .Set(e => e.PhoneNumber, editEmployee.PhoneNumber)
+                .Set(e => e.Email, editEmployee.Email)
+                .Set(e => e.Department, editEmployee.Department)
+                .Set(e => e.Position, editEmployee.Position)
+                .Set(e => e.Hiring, editEmployee.Hiring)
+                .Set(e => e.StartDate, editEmployee.StartDate)
+                .Set(e => e.EndDate, editEmployee.EndDate);
+
+            await _employeesCollection.UpdateOneAsync(filter, update);
+        }
+
+        internal async Task UpdateDictionaryAsync(Dictionary editDictionary)
+        {
+            if (editDictionary == null)
+                throw new ArgumentNullException(nameof(editDictionary));
+
+            if (_dictionariesCollection == null)
+                throw new InvalidOperationException("Dictionaries collection is not initialized.");
+
+            var filter = Builders<Dictionary>.Filter.Eq(d => d.Id, editDictionary.Id);
+            var update = Builders<Dictionary>.Update
+                .Set(d => d.Name, editDictionary.Name)
+                .Set(d => d.Type, editDictionary.Type)
+                .Set(d => d.Description, editDictionary.Description);
+
+            await _dictionariesCollection.UpdateOneAsync(filter, update);
+        }
+
+        internal async Task UpdateUserAsync(User editUser)
+        {
+            if (editUser == null)
+                throw new ArgumentNullException(nameof(editUser));
+
+            if (_usersCollection == null)
+                throw new InvalidOperationException("Users collection is not initialized.");
+
+            var filter = Builders<User>.Filter.Eq(u => u.Id, editUser.Id);
+            var update = Builders<User>.Update
+                .Set(u => u.UserName, editUser.UserName)
+                .Set(u => u.Password, editUser.Password)
+                .Set(u => u.FirstName, editUser.FirstName)
+                .Set(u => u.LastName, editUser.LastName)
+                .Set(u => u.Email, editUser.Email)
+                .Set(u => u.RoleId, editUser.RoleId)
+                .Set(u => u.StartDate, editUser.StartDate)
+                .Set(u => u.EndDate, editUser.EndDate);
+
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
+
+        internal async Task DeleteVacancyAsync(StringValues delVacancyId)
+        {
+            if (_vacancyCollection == null)
+                throw new InvalidOperationException("Vacancy collection is not initialized.");
+
+            foreach (var idStr in delVacancyId)
+            {
+                if (ObjectId.TryParse(idStr, out var objectId))
+                {
+                    var filter = Builders<Vacancy>.Filter.Eq(v => v.Id, objectId);
+                    await _vacancyCollection.DeleteOneAsync(filter);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid Vacancy Id: {idStr}");
+                }
+            }
+        }
+
+        internal async Task DeleteUserAsync(StringValues delUserId)
+        {
+            if (_usersCollection == null)
+                throw new InvalidOperationException("Users collection is not initialized.");
+
+            foreach (var idStr in delUserId)
+            {
+                if (ObjectId.TryParse(idStr, out var objectId))
+                {
+                    var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
+                    await _usersCollection.DeleteOneAsync(filter);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid User Id: {idStr}");
+                }
+            }
+        }
+
+        internal async Task DeleteEmployeeAsync(StringValues delEmployeeId)
+        {
+            if (_employeesCollection == null)
+                throw new InvalidOperationException("Employees collection is not initialized.");
+
+            foreach (var idStr in delEmployeeId)
+            {
+                if (decimal.TryParse(idStr, out var employeeId))
+                {
+                    var filter = Builders<Employee>.Filter.Eq(e => e.Id, employeeId);
+                    await _employeesCollection.DeleteOneAsync(filter);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid Employee Id: {idStr}");
+                }
+            }
+        }
+
+        internal async Task DeleteDictionaryAsync(StringValues delDictId)
+        {
+            if (_dictionariesCollection == null)
+                throw new InvalidOperationException("Dictionaries collection is not initialized.");
+
+            foreach (var idStr in delDictId)
+            {
+                if (decimal.TryParse(idStr, out var dictId))
+                {
+                    var filter = Builders<Dictionary>.Filter.Eq(d => d.Id, dictId);
+                    await _dictionariesCollection.DeleteOneAsync(filter);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid Dictionary Id: {idStr}");
+                }
+            }
+        }
+
+        internal async Task DeleteCandidatAsync(StringValues delCandidatId)
+        {
+            if (_candidatsCollection == null)
+                throw new InvalidOperationException("Candidats collection is not initialized.");
+
+            foreach (var idStr in delCandidatId)
+            {
+                if (!string.IsNullOrWhiteSpace(idStr))
+                {
+                    var filter = Builders<Candidat>.Filter.Eq(c => c.Id, idStr);
+                    await _candidatsCollection.DeleteOneAsync(filter);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid Candidat Id: {idStr}");
+                }
             }
         }
     }
