@@ -282,18 +282,47 @@
     function GetCandidats(data) {
         console.log(data);
 
+        // --- 1. Function to create the User Assignment Selector ---
+        function createAssignmentSelector(candidateId) {
+            // Only Admins or roles with assignment permission should see the selector
+            if (role !== "Admin" && role !== "Manager") {
+                return 'N/A';
+            }
+
+            let selectorHtml = `<select class="assign-user-select" data-candidate-id="${candidateId}">`;
+            console.log(selectorHtml);
+            // Add a default/unassigned option
+            selectorHtml += '<option value="">-- Assign Recruiter --</option>';
+
+            // Populate options from the global HRUserList
+            if (typeof HRUserList !== 'undefined' && HRUserList.length > 0) {
+                HRUserList.forEach(user => {
+                    // Determine if this user is currently assigned to the candidate (You might need this info from 'num.AssignedUserId')
+                    // For simplicity here, we just list the users:
+                    selectorHtml += `<option value="${user.id}">${user.name}</option>`;
+                });
+            } else {
+                // Fallback if the list is empty
+                selectorHtml += '<option value="" disabled>No HR Users Found</option>';
+            }
+            selectorHtml += '</select>';
+            return selectorHtml;
+        }
+        // -----------------------------------------------------------
+
         renderTable('#CandidatsTable',
             // Table Headers for Candidate Data
-            '<tr><th width="10px">№</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">Email</th><th width="80px">Phone</th><th width="80px">Link to CV</th><th width="80px">Source</th><th width="50px">Action</th></tr>',
+            // NOTE: Changed "Action" to "Assign Recruiter" for clarity
+            '<tr><th width="10px">№</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">Email</th><th width="80px">Phone</th><th width="80px">Link to CV</th><th width="80px">Source</th><th width="120px">Assign Recruiter</th></tr>',
             function (num, i) {
-                // Determine the edit link visibility based on user role
-                // NOTE: You might need to add specific role checks for 'Candidate' editing
-                const editLink = role === "Admin" ? '<a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : 'N/A';
+
+                // Get the assignment selector HTML
+                const assignmentSelector = createAssignmentSelector(num._id);
 
                 // Ensure the CV link is clickable
                 const cvLink = num.LinkToCv ? `<a href="${num.LinkToCv}" target="_blank">View CV</a>` : 'N/A';
 
-                return `<tr class="editable-row" data-id="${num.Id}" data-target="GetCandidats">
+                return `<tr class="editable-row" data-id="${num._id}" data-target="GetCandidats">
                         <td align="center">${i}</td>
                         <td class="FirstName">${num.FirstName}</td>
                         <td class="LastName">${num.LastName}</td>
@@ -301,7 +330,8 @@
                         <td class="Phone">${num.PhoneNumber}</td>
                         <td class="LinkToCv">${cvLink}</td>
                         <td class="Source">${num.Source || 'N/A'}</td>
-                        <td class="Action">${editLink}</td>
+                        
+                        <td class="Action">${assignmentSelector}</td>
                     </tr>`;
             }, data);
     }
@@ -320,6 +350,33 @@
                             <td class="Description">${num.Description}${editLink}</td></tr>`;
             }, data);
     }
+
+    // Add this handler to your HRupdate.js file
+    $('#content-view').on('change', '.assign-user-select', function () {
+        const assignedUserId = $(this).val();
+        const candidateId = $(this).data('candidate-id');
+
+        if (assignedUserId) {
+            // 1. Confirm the action (optional)
+            if (!confirm(`Assign this candidate to user ID: ${assignedUserId}?`)) {
+                // User cancelled, maybe reset the dropdown selection if possible
+                return;
+            }
+
+            // 2. Perform the AJAX call to assign the user (Requires C# API endpoint)
+            $.post("/Admin/GetCandidates/AssignRecruiter", {
+                CandidateID: candidateId,
+                RecruiterID: assignedUserId
+            }, function (response) {
+                // Handle success response (e.g., show notification, or don't refresh)
+                console.log('Assignment successful:', response);
+                // Optional: Show a brief success message next to the selector
+            }).fail(function (xhr) {
+                // Handle error
+                alert("Error assigning recruiter. Please check server logs.");
+            });
+        }
+    });
     // --- Navigation & Data Loading (Revised to use new HTML structure) ---
 
     $('.nav-links').on('click', '.nav-item', function (e) {
