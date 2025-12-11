@@ -63,6 +63,17 @@
                     <button type="button" id="DeleteUserButton" class="btn btn-secondary">Delete User</button>
                 </div>
             </form>`,
+        'userForm': `
+            <form id="user-edit-form">
+                <div class="bodySelection"><label for="UserFirstName">First Name</label><input type="text" id="UserFirstName"></div>
+                <div class="bodySelection"><label for="UserLastName">Last Name</label><input type="text" id="UserLastName"></div>
+                <div class="bodySelection"><label for="UserUsername">Username</label><input type="text" id="UserUsername"></div>
+                <div class="bodySelection"><label for="UserPassword">Password</label><input type="text" id="UserPassword" placeholder="Leave blank to keep old password"></div>
+                <div class="bodySelection"><label for="UserEmail">Email</label><input type="text" id="UserEmail"></div>
+                <div class="button-group">
+                    <button type="button" id="AddUserButton" class="btn btn-success" style="display: none;">Add Item</button>
+                </div>
+            </form>`,
         'editHiringForm': `
         <form id="hiring-edit-form">
             <div class="bodySelection">
@@ -126,6 +137,7 @@
 
     // Helper to handle AJAX requests and re-render the current view
     function performActionAndRefresh(url, data, targetRefresh) {
+        console.log(data);
         $.post(url, data)
             .done(function (res) {
                 // If the action was successful, re-fetch the data for the current view
@@ -142,7 +154,7 @@
                 });
             })
             .fail(function (xhr) {
-                alert("Action failed! Status: " + xhr.status + "\nMessage: " + (xhr.responseJSON?.message || xhr.responseText));
+                console.error("Action failed! Status: " + xhr.status + "\nMessage: " + (xhr.responseJSON?.message || xhr.responseText));
             });
     }
 
@@ -242,6 +254,7 @@
         renderTable('#UsersTable',
             '<tr><th width="10px">№</th><th width="80px">Username</th><th width="80px">Password</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">E-mail</th><th width="50px">RoleId</th><th width="80px">StartDate</th><th width="80px">EndDate</th></tr>',
             function (num, i) {
+                console.log(num);
                 // Determine if the edit link should be shown (based on role)
                 const editLink = role === "Admin" ? ' <a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
 
@@ -253,7 +266,7 @@
                             <td class="LastName">${num.LastName}</td>
                             <td class="Email">${num.Email}</td>
                             <td class="RoleID">${num.RoleId}</td>
-                            <td class="StartDate">${formatISODate(num.StartDate.$date)}</td>
+                            <td class="StartDate">${formatISODate(num.StartDate)}</td>
                             <td class="EndDate">${num.EndDate}${editLink}</td></tr>`;
             }, data);
     }
@@ -453,7 +466,7 @@
             actionTarget = 'SetNewDictionary';
         } else if (activeViewId === 'users-view') {
             title = "Add New User";
-            content = templates.editUserForm; // Re-use the user form for add
+            content = templates.userForm; // Re-use the user form for add
             actionTarget = 'SetNewUser';
         } else {
             alert('Select a category (Vacancies/Users) to use the Add button.');
@@ -688,6 +701,23 @@
         performActionAndRefresh("/Admin/GetDictionary/SetNewDictionary", dictionaryData, 'GetDictionary');
     });
 
+    // Block to handle adding a new User when the designated button is clicked
+    $('#global-modal-behind').on('click', '#AddUserButton', function () {
+        // 1. Gather data from the user creation form fields
+        const userData = {
+            // *** IMPORTANT: Adjust these IDs to match the fields in your actual "Add User" form/modal ***
+            FirstName: $('#UserFirstName').val(), // Example User ID field
+            LastName: $('#UserLastName').val(), // Example Password field
+            Username: $('#UserUsername').val(), // Example Email field
+            Password: $('#UserPassword').val(), // Example Password field
+            Email: $('#UserEmail').val()  // Example Role selection field (should send the role ID)
+            // Add any other necessary fields (e.g., Name, Surname, Phone)
+        };
+
+        // 2. Perform the add action and refresh the 'GetUsers' view (or equivalent)
+        // You need to confirm the correct backend URL and the refresh target ID.
+        performActionAndRefresh("/Admin/GetUsers/SetNewUser", userData, 'GetUsers' );
+    });
 
     // --- Initial Load ---
     $.getJSON("/Admin/GetVacancy", { action: "GetComponents" }, GetVacancy);

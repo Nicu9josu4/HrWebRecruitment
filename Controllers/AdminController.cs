@@ -80,7 +80,7 @@ namespace HrWebRecruitment.Controllers
                     case "SetNewUser":
                         var dictionaries = await dbService.GetDictionary();
                         var hrRole = dictionaries.First(dictionary => dictionary.Name == "HR").Id;
-                        var mail = form["FirstName"].ToString().Substring(0, 1) + form["LastName"] + "@email.em";
+                        var mail = form["FirstName"].ToString().ToLowerInvariant().Substring(0, 1) + form["LastName"].ToString().ToLower() + "@email.em";
                         var newUser = new User
                         {
                             UserName = form["Username"],

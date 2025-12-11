@@ -194,7 +194,7 @@ namespace HrWebRecruitment.Services
             try
             {
                 var users = await _usersCollection.Find(_ => true).ToListAsync();
-                var dictionaries = await _dictionariesCollection.Find(d => d.Type == "Role").ToListAsync();
+                var dictionaries = await _dictionariesCollection.Find(d => d.Type == "Position").ToListAsync();
 
                 var result = users
                     .OrderBy(u => u.Id)
