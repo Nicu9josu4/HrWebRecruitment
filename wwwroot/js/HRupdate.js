@@ -292,61 +292,104 @@
     }
 
     // Function to render the CANDIDATES table
-    function GetCandidats(data) {
-        console.log(data);
+    function GetCandidats(candidateData) {
+        console.log("Candidate Data Received:", candidateData);
 
-        // --- 1. Function to create the User Assignment Selector ---
-        function createAssignmentSelector(candidateId) {
-            // Only Admins or roles with assignment permission should see the selector
-            if (role !== "Admin" && role !== "Manager") {
-                return 'N/A';
-            }
+        // Check if employee data is already globally available (optional cache)
+        // If not, we must fetch it.
 
-            let selectorHtml = `<select class="assign-user-select" data-candidate-id="${candidateId}">`;
-            console.log(selectorHtml);
-            // Add a default/unassigned option
-            selectorHtml += '<option value="">-- Assign Recruiter --</option>';
+        // 1. Fetch Employee Data (HRUserList)
+        $.ajax({
+            method: "GET",
+            url: "/Admin/GetEmployees", // <<< CONFIRM YOUR ACTUAL EMPLOYEE FETCH ENDPOINT
+            data: { action: "GetRecruiters" }, // Assuming an action to filter for recruiters/assignees
+            dataType: "json"
+        })
+            .done(function (HRUserList) {
+                // --- Employee data is now locally available as HRUserList ---
+                console.log(HRUserList);
+                const currentRole = getCookie("role");
 
-            // Populate options from the global HRUserList
-            if (typeof HRUserList !== 'undefined' && HRUserList.length > 0) {
-                HRUserList.forEach(user => {
-                    // Determine if this user is currently assigned to the candidate (You might need this info from 'num.AssignedUserId')
-                    // For simplicity here, we just list the users:
-                    selectorHtml += `<option value="${user.id}">${user.name}</option>`;
-                });
-            } else {
-                // Fallback if the list is empty
-                selectorHtml += '<option value="" disabled>No HR Users Found</option>';
-            }
-            selectorHtml += '</select>';
-            return selectorHtml;
-        }
-        // -----------------------------------------------------------
+                // --- 2. Function to create the User Assignment Selector ---
+                function createAssignmentSelector(candidateId, currentlyAssignedUserId) {
+                    console.log(currentlyAssignedUserId);
+                    console.log(candidateId);
+                    // Only Admins or roles with assignment permission should see the selector
+                    if (currentRole !== "Admin" && currentRole !== "Manager") {
+                        // Find the name of the assigned user for display
+                        const assignedUser = (HRUserList && HRUserList.length > 0)
+                            ? HRUserList.find(user => user.id === currentlyAssignedUserId)?.FirstName || 'N/A'
+                            : 'N/A';
+                        return `<span class="assigned-user-name">${assignedUser}</span>`;
+                    }
 
-        renderTable('#CandidatsTable',
-            // Table Headers for Candidate Data
-            // NOTE: Changed "Action" to "Assign Recruiter" for clarity
-            '<tr><th width="10px">№</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">Email</th><th width="80px">Phone</th><th width="80px">Link to CV</th><th width="80px">Source</th><th width="120px">Assign Recruiter</th></tr>',
-            function (num, i) {
+                    let selectorHtml = `<select class="assign-user-select" data-candidate-id="${candidateId}">`;
 
-                // Get the assignment selector HTML
-                const assignmentSelector = createAssignmentSelector(num._id);
+                    // Add a default/unassigned option
+                    const isUnassignedSelected = !currentlyAssignedUserId ? 'selected' : '';
+                    selectorHtml += `<option value="" ${isUnassignedSelected}>-- Assign Recruiter --</option>`;
 
-                // Ensure the CV link is clickable
-                const cvLink = num.LinkToCv ? `<a href="${num.LinkToCv}" target="_blank">View CV</a>` : 'N/A';
+                    // Populate options from the fetched HRUserList
+                    if (HRUserList && HRUserList.length > 0) {
+                        HRUserList.forEach(user => {
+                            // Check if this user is the one currently assigned
+                            const isSelected = (user.id === currentlyAssignedUserId) ? 'selected' : '';
 
-                return `<tr class="editable-row" data-id="${num._id}" data-target="GetCandidats">
-                        <td align="center">${i}</td>
-                        <td class="FirstName">${num.FirstName}</td>
-                        <td class="LastName">${num.LastName}</td>
-                        <td class="Email">${num.Email}</td>
-                        <td class="Phone">${num.PhoneNumber}</td>
-                        <td class="LinkToCv">${cvLink}</td>
-                        <td class="Source">${num.Source || 'N/A'}</td>
-                        
-                        <td class="Action">${assignmentSelector}</td>
-                    </tr>`;
-            }, data);
+                            // Use user.id for the value and user.name for the visible text
+                            selectorHtml += `<option value="${user.id}" ${isSelected}>${user.name}</option>`;
+                        });
+                    } else {
+                        selectorHtml += '<option value="" disabled>No HR Users Found</option>';
+                    }
+                    selectorHtml += '</select>';
+                    return selectorHtml;
+                }
+                // -----------------------------------------------------------
+
+                // 3. Render the Candidate Table
+                renderTable('#CandidatsTable',
+                    '<tr><th width="10px">№</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">Email</th><th width="80px">Phone</th><th width="80px">Link to CV</th><th width="80px">Source</th><th width="120px">Assign Recruiter</th></tr>',
+                    function (num, i) { // num = individual candidate object
+
+                        // Extract the currently assigned user ID from the candidate data
+                        const assignedUserId = num.AssignedUserId;
+
+                        // Get the assignment selector HTML using the fetched HRUserList
+                        const assignmentSelector = createAssignmentSelector(num._id, assignedUserId);
+
+                        // Ensure the CV link is clickable
+                        const cvLink = num.LinkToCv ? `<a href="${num.LinkToCv}" target="_blank" class="cv-link"><i class="fas fa-file-alt"></i> View CV</a>` : 'N/A';
+
+                        // Add a status icon based on assignment status
+                        const statusIcon = assignedUserId ?
+                            '<i class="fas fa-user-check assigned" title="Assigned"></i>' :
+                            '<i class="fas fa-user-times unassigned" title="Unassigned"></i>';
+
+                        return `<tr class="editable-row" data-id="${num._id}" data-target="GetCandidats">
+                            <td align="center">${i}</td>
+                            <td class="FirstName">${num.FirstName}</td>
+                            <td class="LastName">${num.LastName}</td>
+                            <td class="Email">${num.Email}</td>
+                            <td class="Phone">${num.PhoneNumber}</td>
+                            <td class="LinkToCv">${cvLink}</td>
+                            <td class="Source">${num.Source || 'N/A'}</td>
+                            
+                            <td class="Action">
+                                ${statusIcon}
+                                ${assignmentSelector}
+                            </td>
+                        </tr>`;
+                    }, candidateData); // Use the original candidateData received
+            })
+            .fail(function (xhr) {
+                console.error("Failed to fetch employee list:", xhr);
+                // Optionally render the candidate table without the selector if data is critical
+                renderTable('#CandidatsTable',
+                    '<tr><th>Error</th></tr>',
+                    () => `<tr><td colspan="8">Could not load employee list for assignment. Please check the backend connection.</td></tr>`,
+                    [{}] // Render one row to show the error
+                );
+            });
     }
 
     // Function to render the DICTIONARY table
