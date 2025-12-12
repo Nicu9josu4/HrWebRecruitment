@@ -29,9 +29,10 @@ namespace HrWebRecruitment.Controllers
                 {
                     Id = ObjectId.GenerateNewId(),
                     FirstName = Request.Form["Name"],
-                    LastName = Request.Form["LastName"],
+                    LastName = Request.Form["Surname"],
                     Email = Request.Form["Email"],
-                    PhoneNumber = Request.Form["PhoneNumber"],
+                    PhoneNumber = Request.Form["Phone"],
+                    VacancyName = Request.Form["VacancyTitle"],
                     LinkToCv = linkToCv
                 });
 

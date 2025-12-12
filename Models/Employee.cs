@@ -31,7 +31,7 @@ public partial class Employee
     public string Position { get; set; }
 
     [BsonElement("Hiring")]
-    public string Hiring { get; set; }
+    public string? Hiring { get; set; }
 
     [BsonElement("StartDate")]
     public DateTime? StartDate { get; set; }

@@ -26,7 +26,7 @@ namespace HrWebRecruitment.Services
 
         public DbService(IMongoClient mongoClient, IOptions<MongoDbConfigModel> dbConfig, IConfiguration configuration, ILogger<DbService> logger) : this(mongoClient, dbConfig.Value, configuration, logger)
         {
-            //Initialize().Wait();
+            Initialize().Wait();
             _vacancyCollection = _database.GetCollection<Vacancy>("Vacancies");
             _usersCollection = _database.GetCollection<User>("Users");
             _candidatsCollection = _database.GetCollection<Candidat>("Candidats");
@@ -161,7 +161,7 @@ namespace HrWebRecruitment.Services
                         var candidat = candidats.FirstOrDefault(c => c.Id == new ObjectId(hiring.Candidat)); // Assuming Candidat is the correct BSON type
                         var user = employees.FirstOrDefault(u => u.Id == new ObjectId(hiring.Employee));            // Assuming Users is the correct BSON type
                         var statusDict = dictionaries.FirstOrDefault(d => d.Type == "Status" && d.Name == (hiring.Status ?? "New"));
-                        var vacancy = vacancies.FirstOrDefault(v => v.Id == new ObjectId(hiring.Vacancy));
+                        var vacancy = vacancies.FirstOrDefault(v => v.Title == hiring.Vacancy);
 
                         return new
                         {
@@ -241,7 +241,7 @@ namespace HrWebRecruitment.Services
                     {
                         var positionDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(e.Position));
                         var departmentDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(e.Department));
-                        var hiring = e.Hiring != null ? hirings.FirstOrDefault(h => h.Id == new ObjectId(e.Hiring)) : null;
+                        var hiring = !string.IsNullOrEmpty(e.Hiring) ? hirings.FirstOrDefault(h => h.Id == new ObjectId(e.Hiring)) : null;
                         var candidat = hiring != null
                             ? candidats.FirstOrDefault(c => c.Id == new ObjectId(hiring.Candidat))
                             : null;
