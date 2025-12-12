@@ -15,6 +15,12 @@ public class Candidat
     [BsonElement("LastName")]
     public string LastName { get; set; } = null!;
 
+    [BsonElement("VacancyName")]
+    public string VacancyName { get; set; } = null!;
+
+    [BsonElement("AssignedUserId")]
+    public string AssignedUserId { get; set; } = null!;
+
     [BsonElement("Email")]
     public string? Email { get; set; }
 

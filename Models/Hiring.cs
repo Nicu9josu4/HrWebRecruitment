@@ -16,9 +16,10 @@ public partial class Hiring
 
     [BsonElement("Candidat")]
     public string Candidat { get; set; }
+    public string CandidatId { get; set; }
 
-    [BsonElement("Users")]
-    public string? Users { get; set; }
+    [BsonElement("Employee")]
+    public string? Employee { get; set; }
 
     [BsonElement("Status")]
     public string Status { get; set; }

@@ -9,7 +9,8 @@ namespace HrWebRecruitment;
 public partial class User
 {
     [BsonId]
-    [BsonRepresentation(BsonType.String)] // Since Id is a string in JSON
+    [BsonElement("_id")] // MongoDB stores the primary key as '_id'
+    [BsonRepresentation(BsonType.ObjectId)] // Since Id is a string in JSON
     public ObjectId Id { get; set; }
 
     [BsonElement("UserName")]

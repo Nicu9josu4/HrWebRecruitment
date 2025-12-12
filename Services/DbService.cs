@@ -122,7 +122,7 @@ namespace HrWebRecruitment.Services
                 // 1. Fetch all static data tables first (Dictionaries, Users, Candidats, Vacancies)
                 var dictionaries = await _dictionariesCollection.Find(_ => true).ToListAsync();
                 var candidats = await _candidatsCollection.Find(_ => true).ToListAsync();
-                var users = await _usersCollection.Find(_ => true).ToListAsync();
+                var employees = await _employeesCollection.Find(_ => true).ToListAsync();
                 var vacancies = await _vacancyCollection.Find(_ => true).ToListAsync();
 
                 // 2. Dynamically find the ID for the status we want to exclude (e.g., "Archived")
@@ -159,14 +159,14 @@ namespace HrWebRecruitment.Services
                     {
                         // Ensure IDs are converted correctly for matching (e.g., Candidat ID is ObjectId or string)
                         var candidat = candidats.FirstOrDefault(c => c.Id == new ObjectId(hiring.Candidat)); // Assuming Candidat is the correct BSON type
-                        var user = users.FirstOrDefault(u => u.Id == new ObjectId(hiring.Users));            // Assuming Users is the correct BSON type
-                        var statusDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(hiring.Status));
+                        var user = employees.FirstOrDefault(u => u.Id == new ObjectId(hiring.Employee));            // Assuming Users is the correct BSON type
+                        var statusDict = dictionaries.FirstOrDefault(d => d.Type == "Status" && d.Name == (hiring.Status ?? "New"));
                         var vacancy = vacancies.FirstOrDefault(v => v.Id == new ObjectId(hiring.Vacancy));
 
                         return new
                         {
                             HiringId = hiring.Id,
-                            CandidatID = hiring.Candidat,
+                            CandidatId = hiring.Candidat,
                             Candidat = candidat != null ? $"{candidat.FirstName} {candidat.LastName}" : "",
                             User = user != null ? $"{user.FirstName} {user.LastName}" : "admin",
                             Status = statusDict?.Name,
@@ -241,7 +241,7 @@ namespace HrWebRecruitment.Services
                     {
                         var positionDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(e.Position));
                         var departmentDict = dictionaries.FirstOrDefault(d => d.Id == new ObjectId(e.Department));
-                        var hiring = hirings.FirstOrDefault(h => h.Id == new ObjectId(e.Hiring));
+                        var hiring = e.Hiring != null ? hirings.FirstOrDefault(h => h.Id == new ObjectId(e.Hiring)) : null;
                         var candidat = hiring != null
                             ? candidats.FirstOrDefault(c => c.Id == new ObjectId(hiring.Candidat))
                             : null;
@@ -364,7 +364,7 @@ namespace HrWebRecruitment.Services
             await _employeesCollection.InsertOneAsync(newEmployee);
         }
 
-        internal async Task UpdateHiringAsync(Hiring hiring)
+        internal async Task AddOrUpdateHiringAsync(Hiring hiring)
         {
             if (hiring == null)
                 throw new ArgumentNullException(nameof(hiring));
@@ -372,16 +372,28 @@ namespace HrWebRecruitment.Services
             if (_hiringCollection == null)
                 throw new InvalidOperationException("Hiring collection is not initialized.");
 
+            // Check if a hiring with the same Id exists
             var filter = Builders<Hiring>.Filter.Eq(h => h.Id, hiring.Id);
-            var update = Builders<Hiring>.Update
-                .Set(h => h.Candidat, hiring.Candidat)
-                .Set(h => h.Users, hiring.Users)
-                .Set(h => h.Status, hiring.Status)
-                .Set(h => h.Vacancy, hiring.Vacancy)
-                .Set(h => h.StatusDate, hiring.StatusDate)
-                .Set(h => h.Comm, hiring.Comm);
+            var existingHiring = await _hiringCollection.Find(filter).FirstOrDefaultAsync();
 
-            await _hiringCollection.UpdateOneAsync(filter, update);
+            if (existingHiring == null)
+            {
+                // No hiring exists with this Id, insert new
+                await _hiringCollection.InsertOneAsync(hiring);
+            }
+            else
+            {
+                // Hiring exists, update it
+                var update = Builders<Hiring>.Update
+                    .Set(h => h.Candidat, hiring.Candidat)
+                    .Set(h => h.Employee, hiring.Employee)
+                    .Set(h => h.Status, hiring.Status)
+                    .Set(h => h.Vacancy, hiring.Vacancy)
+                    .Set(h => h.StatusDate, hiring.StatusDate)
+                    .Set(h => h.Comm, hiring.Comm);
+
+                await _hiringCollection.UpdateOneAsync(filter, update);
+            }
         }
 
         internal async Task UpdateEmployeeAsync(Employee editEmployee)
@@ -550,6 +562,33 @@ namespace HrWebRecruitment.Services
                 throw new InvalidOperationException("Dictionaries collection is not initialized.");
 
             await _dictionariesCollection.InsertOneAsync(newDictionary);
+        }
+
+        internal async Task UpdateCandidatRecruiter(ObjectId candidatId, string recruiterId)
+        {
+            if (_candidatsCollection == null)
+                throw new InvalidOperationException("Candidats collection is not initialized.");
+
+            // recruiterId can be a single value or multiple values (comma separated or array)
+
+            var filter = Builders<Candidat>.Filter.Eq(c => c.Id, candidatId);
+            var update = Builders<Candidat>.Update.Set(c => c.AssignedUserId, recruiterId);
+
+            await _candidatsCollection.UpdateOneAsync(filter, update);
+        }
+
+        internal async Task<List<Hiring>>? GetRawHirings()
+        {
+            try
+            {
+                var hirings = await _hiringCollection.Find(_ => true).ToListAsync();
+                return hirings;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving raw hirings data.");
+                return null;
+            }
         }
     }
 }

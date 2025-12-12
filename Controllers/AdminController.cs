@@ -164,7 +164,7 @@ namespace HrWebRecruitment.Controllers
                         hiring.Status = dictionary.Id.ToString();
                         hiring.Comm = description;
                         hiring.StatusDate = DateTime.Now;
-                        await dbService.UpdateHiringAsync(hiring);
+                        await dbService.AddOrUpdateHiringAsync(hiring);
                         return Ok();
                     case "EditEmployeeMenu":
                         var empId = form["ID"];
@@ -250,7 +250,7 @@ namespace HrWebRecruitment.Controllers
                         {
                             HiringID = editHiringMenuId,
                             HiringCandidat = editHiringMenu.Candidat,
-                            HiringUsers = editHiringMenu.Users,
+                            HiringUsers = editHiringMenu.Employee,
                             HiringStatus = statusName.Name,
                             HiringVacancy = editHiringMenu.Vacancy,
                             HiringStatusDate = editHiringMenu.StatusDate,
@@ -267,6 +267,49 @@ namespace HrWebRecruitment.Controllers
                         var getCandidatsList = await dbService.GetCandidats();
                         var getCandidat = getCandidatsList.FirstOrDefault(c => c.Id == getCandidatId);
                         return Content(JsonConvert.SerializeObject(getCandidat));
+                    case "AssignRecruiter":
+                        // Expecting CandidateID and RecruiterID from the frontend POST
+                        var candidateId = form["CandidateID"];
+                        var recruiterId = form["RecruiterID"];
+
+                        // Get all hirings and try to find an existing hiring for this candidate
+                        var allHirings = await dbService.GetRawHirings();
+
+                        var candList = await dbService.GetCandidats();
+                        var candidat = candList.First(candidat => candidat.Id == new ObjectId(candidateId));
+                        var hiringForCandidate = allHirings.FirstOrDefault(h => h.Candidat == candidateId);
+
+                        // Validate recruiter exists
+                        var employeesList = await dbService.GetEmployees();
+                        var allUsers = JsonConvert.DeserializeObject<List<EmployeeDto>>(employeesList);
+                        var recruiterUser = allUsers.FirstOrDefault(u => u.Id.ToString() == recruiterId);
+                        if (recruiterUser == null)
+                        {
+                            return NotFound("Recruiter not found");
+                        }
+
+                        if (hiringForCandidate == null)
+                        {
+                            // Create a new Hiring for this candidate and assign recruiter
+                            var newHiring = new Hiring
+                            {
+                                Id = ObjectId.GenerateNewId(),
+                                Candidat = candidateId,
+                                Employee = recruiterId,
+                                Status = "New", // Set default or required status if needed
+                                Vacancy = candidat.VacancyName, // Set default or required vacancy if needed
+                                StatusDate = DateTime.Now,
+                                Comm = ""
+                            };
+                            await dbService.AddOrUpdateHiringAsync(newHiring); // Assuming upsert
+                            await dbService.UpdateCandidatRecruiter(candidat.Id, recruiterId);
+                            return Ok("New hiring created and recruiter assigned.");
+                        }
+
+                            // Update recruiter for existing hiring
+                            hiringForCandidate.Employee = recruiterId;
+                        await dbService.AddOrUpdateHiringAsync(hiringForCandidate);
+                        return Ok("Recruiter assigned to existing hiring.");
                     case "DeleteUser":
                         var delUserId = form["ID"];
                         await dbService.DeleteUserAsync(delUserId);

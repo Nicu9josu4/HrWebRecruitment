@@ -241,7 +241,7 @@
                             <td class="Users">${num.User}</td>
                             <td class="Status" data-cv="${num.CV}">${num.Status}</td>
                             <td class="Vacancy">${num.Vacancy}</td>
-                            <td class="StatusDate">${formatISODate(num.StatusDate.$date)}</td>
+                            <td class="StatusDate">${formatISODate(num.StatusDate)}</td>
                             <td class="Commentary">${num.Comm} <a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a></td></tr>`;
             }, data);
     }
@@ -312,15 +312,21 @@
 
                 // --- 2. Function to create the User Assignment Selector ---
                 function createAssignmentSelector(candidateId, currentlyAssignedUserId) {
-                    console.log(currentlyAssignedUserId);
-                    console.log(candidateId);
+                    // Helper function to get the full name from a user object
+                    const getFullName = (user) => `${user.FirstName} ${user.LastName}`;
+                    console.log(HRUserList);
+
                     // Only Admins or roles with assignment permission should see the selector
                     if (currentRole !== "Admin" && currentRole !== "Manager") {
-                        // Find the name of the assigned user for display
+                        // Find the assigned user object
                         const assignedUser = (HRUserList && HRUserList.length > 0)
-                            ? HRUserList.find(user => user.id === currentlyAssignedUserId)?.FirstName || 'N/A'
-                            : 'N/A';
-                        return `<span class="assigned-user-name">${assignedUser}</span>`;
+                            ? HRUserList.find(user => user.Id === currentlyAssignedUserId)
+                            : null;
+
+                        // Display the full name or 'N/A'
+                        const assignedUserName = assignedUser ? getFullName(assignedUser) : 'N/A';
+
+                        return `<span class="assigned-user-name">${assignedUserName}</span>`;
                     }
 
                     let selectorHtml = `<select class="assign-user-select" data-candidate-id="${candidateId}">`;
@@ -333,10 +339,13 @@
                     if (HRUserList && HRUserList.length > 0) {
                         HRUserList.forEach(user => {
                             // Check if this user is the one currently assigned
-                            const isSelected = (user.id === currentlyAssignedUserId) ? 'selected' : '';
+                            const isSelected = (user.Id === currentlyAssignedUserId) ? 'selected' : '';
 
-                            // Use user.id for the value and user.name for the visible text
-                            selectorHtml += `<option value="${user.id}" ${isSelected}>${user.name}</option>`;
+                            // **CHANGE HERE: Use full name for the displayed text**
+                            const fullName = getFullName(user);
+
+                            // Use user.id for the value and the full name for the visible text
+                            selectorHtml += `<option value="${user.Id}" ${isSelected}>${fullName}</option>`;
                         });
                     } else {
                         selectorHtml += '<option value="" disabled>No HR Users Found</option>';
@@ -353,10 +362,8 @@
 
                         // Extract the currently assigned user ID from the candidate data
                         const assignedUserId = num.AssignedUserId;
-
                         // Get the assignment selector HTML using the fetched HRUserList
                         const assignmentSelector = createAssignmentSelector(num._id, assignedUserId);
-
                         // Ensure the CV link is clickable
                         const cvLink = num.LinkToCv ? `<a href="${num.LinkToCv}" target="_blank" class="cv-link"><i class="fas fa-file-alt"></i> View CV</a>` : 'N/A';
 
@@ -411,13 +418,12 @@
     $('#content-view').on('change', '.assign-user-select', function () {
         const assignedUserId = $(this).val();
         const candidateId = $(this).data('candidate-id');
-
         if (assignedUserId) {
             // 1. Confirm the action (optional)
-            if (!confirm(`Assign this candidate to user ID: ${assignedUserId}?`)) {
-                // User cancelled, maybe reset the dropdown selection if possible
-                return;
-            }
+            //if (!confirm(`Assign this candidate to user ID: ${candidateId}?`)) {
+            //    // User cancelled, maybe reset the dropdown selection if possible
+            //    return;
+            //}
 
             // 2. Perform the AJAX call to assign the user (Requires C# API endpoint)
             $.post("/Admin/GetCandidates/AssignRecruiter", {
