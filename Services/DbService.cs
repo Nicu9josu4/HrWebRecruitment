@@ -604,5 +604,19 @@ namespace HrWebRecruitment.Services
                 return null;
             }
         }
+
+        internal async Task<List<User>>? GetRawUsers()
+        {
+            try
+            {
+                var users = await _usersCollection.Find(_ => true).ToListAsync();
+                return users;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving raw hirings data.");
+                return null;
+            }
+        }
     }
 }

@@ -224,7 +224,7 @@ namespace HrWebRecruitment.Controllers
                         return Ok();
                     case "EditUserMenu":
                         var userMenuId = form["ID"];
-                        var userMenuList = JsonConvert.DeserializeObject<List<User>>(await dbService.GetUsers());
+                        var userMenuList = await dbService.GetRawUsers();
                         var userMenu = userMenuList.FirstOrDefault(u => u.Id.ToString() == userMenuId);
                         _json = JsonConvert.SerializeObject(userMenu);
                         return Content(_json);

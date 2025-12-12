@@ -137,7 +137,6 @@
 
     // Helper to handle AJAX requests and re-render the current view
     function performActionAndRefresh(url, data, targetRefresh) {
-        console.log(data);
         $.post(url, data)
             .done(function (res) {
                 // If the action was successful, re-fetch the data for the current view
@@ -255,7 +254,6 @@
         renderTable('#UsersTable',
             '<tr><th width="10px">№</th><th width="80px">Username</th><th width="80px">Password</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">E-mail</th><th width="50px">RoleId</th><th width="80px">StartDate</th><th width="80px">EndDate</th><th width="20px">Action</th></tr>',
             function (num, i) {
-                console.log(num);
                 // Determine if the edit link should be shown (based on role)
                 const editLink = role === "Admin" ? ' </td><td class="Action"><a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
 
@@ -293,7 +291,6 @@
 
     // Function to render the CANDIDATES table
     function GetCandidats(candidateData) {
-        console.log("Candidate Data Received:", candidateData);
 
         // Check if employee data is already globally available (optional cache)
         // If not, we must fetch it.
@@ -307,14 +304,12 @@
         })
             .done(function (HRUserList) {
                 // --- Employee data is now locally available as HRUserList ---
-                console.log(HRUserList);
                 const currentRole = getCookie("role");
 
                 // --- 2. Function to create the User Assignment Selector ---
                 function createAssignmentSelector(candidateId, currentlyAssignedUserId) {
                     // Helper function to get the full name from a user object
                     const getFullName = (user) => `${user.FirstName} ${user.LastName}`;
-                    console.log(HRUserList);
 
                     // Only Admins or roles with assignment permission should see the selector
                     if (currentRole !== "Admin" && currentRole !== "Manager") {
@@ -454,8 +449,6 @@
         $('.data-view').removeClass('active').addClass('hidden');
         $('#' + targetView).removeClass('hidden').addClass('active');
 
-        console.log(targetContent);
-        console.log(targetView);
         // Determine API target
         const apiTargets = {
             'vacancies': 'GetVacancy',
@@ -591,13 +584,11 @@
 
                 // Fetch User Data and populate form fields
                 $.post("/Admin/GetUsers/EditUserMenu", { ID: currentItemID }, function (data) {
-                    console.log(data);
                     const d = Array.isArray(data) ? data[0] : (typeof data === 'string' ? JSON.parse(data) : data);
-
                     // Populate fields
                     $('#UserFirstName').val(d.FirstName);
                     $('#UserLastName').val(d.LastName);
-                    $('#UserUsername').val(d.Username);
+                    $('#UserUsername').val(d.UserName);
                     // Password field is usually left blank for security reasons on edit
                     $('#UserPassword').val('');
                     $('#UserEmail').val(d.Email);
@@ -627,7 +618,6 @@
                 title = "Edit Dictionary Item";
                 content = templates.editDictionaryForm;
                 openModal(title, content);
-                console.log(currentItemID);
                 // Fetch Dictionary Data and populate form fields
                 $.post("/Admin/GetDictionary/EditDictionaryMenu", { ID: currentItemID }, function (data) {
                     const d = Array.isArray(data) ? data[0] : (typeof data === 'string' ? JSON.parse(data) : data);
