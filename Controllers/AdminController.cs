@@ -168,7 +168,7 @@ namespace HrWebRecruitment.Controllers
                         return Ok();
                     case "EditEmployeeMenu":
                         var empId = form["ID"];
-                        var employees = JsonConvert.DeserializeObject<List<Employee>>(await dbService.GetEmployees());
+                        var employees = await dbService.GetRawEmployees();
                         var employee = employees.FirstOrDefault(e => e.Id.ToString() == empId);
                         var departments = (await dbService.GetDictionary()).Where(dict => dict.Type == "Department").ToList();
                         var depNames = departments.Select(dep => dep.Name).ToList();

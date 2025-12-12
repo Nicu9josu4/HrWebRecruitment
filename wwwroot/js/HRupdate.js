@@ -231,18 +231,19 @@
     }
 
     function GetHiring(data) {
-        console.log(data);
         renderTable('#HiringTable',
-            '<tr><th width="10px">№</th><th width="80px">Candidat</th><th width="80px">User</th><th width="80px">Status</th><th width="80px">Vacancy</th><th width="10px">StatusDate</th><th width="200px">Commentary</th></tr>',
+            '<tr><th width="10px">№</th><th width="80px">Candidat</th><th width="80px">User</th><th width="80px">Status</th><th width="80px">Vacancy</th><th width="10px">StatusDate</th><th width="180px">Commentary</th><th width="20px">Action</th></tr>',
             function (num, i) {
-                return `<tr class="editable-row" data-id="${num.HiringId}" data-candidat-id="${num.CandidatID}" data-target="GetHiring">
+                const editLink = role === "Admin" ? ' </td><td class="Action"><a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
+
+                return `<tr class="editable-row" data-id="${num.HiringId}" data-candidat-id="${num.CandidatId}" data-target="GetHiring">
                             <td align="center">${i}</td>
                             <td class="Candidat">${num.Candidat}</td>
                             <td class="Users">${num.User}</td>
                             <td class="Status" data-cv="${num.CV}">${num.Status}</td>
                             <td class="Vacancy">${num.Vacancy}</td>
                             <td class="StatusDate">${formatISODate(num.StatusDate)}</td>
-                            <td class="Commentary">${num.Comm} <a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a></td></tr>`;
+                            <td class="Commentary">${num.Comm}${editLink}</td></tr>`;
             }, data);
     }
 
@@ -252,11 +253,11 @@
     function GetUsers(data) {
 
         renderTable('#UsersTable',
-            '<tr><th width="10px">№</th><th width="80px">Username</th><th width="80px">Password</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">E-mail</th><th width="50px">RoleId</th><th width="80px">StartDate</th><th width="80px">EndDate</th></tr>',
+            '<tr><th width="10px">№</th><th width="80px">Username</th><th width="80px">Password</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">E-mail</th><th width="50px">RoleId</th><th width="80px">StartDate</th><th width="80px">EndDate</th><th width="20px">Action</th></tr>',
             function (num, i) {
                 console.log(num);
                 // Determine if the edit link should be shown (based on role)
-                const editLink = role === "Admin" ? ' <a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
+                const editLink = role === "Admin" ? ' </td><td class="Action"><a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
 
                 return `<tr class="editable-row" data-id="${num.Id}" data-target="GetUsers">
                             <td align="center">${i}</td>
@@ -274,10 +275,9 @@
     // Function to render the EMPLOYEES table
     function GetEmployees(data) {
         renderTable('#EmployeesTable',
-            '<tr><th width="10px">№</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">Phone</th><th width="100px">E-mail</th><th width="50px">Department</th><th width="50px">Position</th><th width="20px">Hiring</th><th width="80px">StartDate</th></tr>',
+            '<tr><th width="10px">№</th><th width="80px">FirstName</th><th width="80px">LastName</th><th width="80px">Phone</th><th width="100px">E-mail</th><th width="50px">Department</th><th width="50px">Position</th><th width="20px">Hiring</th><th width="80px">StartDate</th><th width="20px">Action</th></tr>',
             function (num, i) {
-                const editLink = role === "Admin" ? ' <a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
-                console.log(num);
+                const editLink = role === "Admin" ? ' </td><td class="Action"><a href="#" class="edit-btn"><i class="fas fa-edit"></i> edit</a>' : '';
                 return `<tr class="editable-row" data-id="${num.Id}" data-target="GetEmployees">
                             <td align="center">${i}</td>
                             <td class="FirstName">${num.FirstName}</td>

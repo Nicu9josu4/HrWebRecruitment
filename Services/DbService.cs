@@ -590,5 +590,19 @@ namespace HrWebRecruitment.Services
                 return null;
             }
         }
+
+        internal async Task<List<Employee>>? GetRawEmployees()
+        {
+            try
+            {
+                var employees = await _employeesCollection.Find(_ => true).ToListAsync();
+                return employees;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving raw hirings data.");
+                return null;
+            }
+        }
     }
 }
